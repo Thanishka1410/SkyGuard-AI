@@ -1,6 +1,6 @@
 import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
-import { PieChart as PieIcon, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { PieChart as PieIcon } from 'lucide-react';
 
 const COLOR_MAP = {
   NORMAL: '#10b981',
@@ -32,32 +32,32 @@ export default function PieChartCard({ telemetry }) {
   }));
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between h-full">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between h-full overflow-hidden">
       {/* Header */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-base font-semibold text-white flex items-center gap-2">
-            <PieIcon className="w-5 h-5 text-sky-400" />
+          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+            <PieIcon className="w-4 h-4 text-sky-400" />
             Disambiguation & Root Cause Distribution
           </h2>
         </div>
-        <p className="text-xs text-slate-400 mb-4">
+        <p className="text-[11px] text-slate-400 mb-3">
           Breakdown of Normal, Real Meteorological Events, and Sensor Faults
         </p>
       </div>
 
       {/* Main Content: Donut Chart + Side Legend */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center flex-1">
-        {/* Donut Chart */}
-        <div className="md:col-span-5 h-48 relative flex items-center justify-center">
+      <div className="flex flex-col sm:flex-row items-center gap-3 flex-1 overflow-hidden">
+        {/* Donut Chart with Compact Radius */}
+        <div className="w-full sm:w-2/5 h-40 relative flex items-center justify-center min-w-[140px]">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={50}
-                outerRadius={75}
+                innerRadius={38}
+                outerRadius={58}
                 paddingAngle={3}
                 dataKey="value"
               >
@@ -66,7 +66,7 @@ export default function PieChartCard({ telemetry }) {
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.5rem', fontSize: '12px' }}
+                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.5rem', fontSize: '11px', padding: '6px 10px' }}
                 itemStyle={{ color: '#f8fafc' }}
                 formatter={(value, name) => [`${value} rows (${((value / total) * 100).toFixed(1)}%)`, name]}
               />
@@ -74,22 +74,22 @@ export default function PieChartCard({ telemetry }) {
           </ResponsiveContainer>
           {/* Donut Center Label */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-lg font-bold text-white leading-none">{total.toLocaleString()}</span>
-            <span className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider">Total Rows</span>
+            <span className="text-base font-bold text-white leading-none">{total.toLocaleString()}</span>
+            <span className="text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider">Total</span>
           </div>
         </div>
 
         {/* Custom Clean Legend List with Progress Bars */}
-        <div className="md:col-span-7 space-y-2 max-h-52 overflow-y-auto pr-1">
+        <div className="w-full sm:w-3/5 space-y-1.5 max-h-48 overflow-y-auto pr-1">
           {data.map((item, idx) => (
-            <div key={idx} className="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 text-xs">
+            <div key={idx} className="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800/80 text-[11px]">
               <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center space-x-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="font-semibold text-slate-200">{item.name}</span>
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                  <span className="font-medium text-slate-200 truncate">{item.name}</span>
                 </div>
-                <span className="font-mono text-slate-400 font-medium">
-                  {item.value} <span className="text-slate-500 text-[11px]">({item.percentage}%)</span>
+                <span className="font-mono text-slate-400 font-medium shrink-0 ml-1">
+                  {item.value} <span className="text-slate-500 text-[10px]">({item.percentage}%)</span>
                 </span>
               </div>
               <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
