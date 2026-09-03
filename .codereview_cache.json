@@ -1,0 +1,146 @@
+{
+  "dashboard\\app.py": {
+    "file_path": "dashboard\\app.py",
+    "sha256": "c2abc545156c7cf4fca4536926908f1d4d2f6119253d1eaf4df67c600c169622",
+    "issues": [
+      {
+        "severity": "HIGH",
+        "category": "Security",
+        "file_path": "dashboard\\app.py",
+        "line_number": 12,
+        "title": "Potential SQL Injection",
+        "description": "String concatenation or interpolation detected in SQL query construction.",
+        "suggestion": "Use parameterized queries or ORM bindings (e.g., cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))).",
+        "code_example": null,
+        "confidence_score": 0.9,
+        "estimated_fix_minutes": 15
+      }
+    ]
+  },
+  "docs\\code_review_and_roadmap.md": {
+    "file_path": "docs\\code_review_and_roadmap.md",
+    "sha256": "eca24e5d97a1cd3506e5dcf4e92df9d4985f5aabf997e09824ad36fff7766162",
+    "issues": []
+  },
+  "docs\\compliance_checklist.md": {
+    "file_path": "docs\\compliance_checklist.md",
+    "sha256": "7122d12de13260fac04489445f51b5919ee05cb4980c20acaa21bb2cfb067dbd",
+    "issues": []
+  },
+  "docs\\use_cases.md": {
+    "file_path": "docs\\use_cases.md",
+    "sha256": "ee13a987928d04519a3384faad4fddfc6e403e18ddae821505c190c346929d9e",
+    "issues": []
+  },
+  "main.py": {
+    "file_path": "main.py",
+    "sha256": "db080ed867d3f25bfb02f5af771ff5301f38e5ea80ca8937d6ad06d94040e081",
+    "issues": []
+  },
+  "src\\__init__.py": {
+    "file_path": "src\\__init__.py",
+    "sha256": "0f89f6a72079fcdad1d4d53ad3f12248634dd61c084394a26cd41a26cdcc0cea",
+    "issues": []
+  },
+  "src\\edge\\esp32_guard.py": {
+    "file_path": "src\\edge\\esp32_guard.py",
+    "sha256": "04e5643899bb74976246d85644f7ae90db13a0cf6e2e01f05f2e188807243c95",
+    "issues": []
+  },
+  "src\\explain.py": {
+    "file_path": "src\\explain.py",
+    "sha256": "f5f2f24e8442b35d64611a651839f7f16ce9cd47b0f850197a47035b83f6044d",
+    "issues": []
+  },
+  "src\\fusion.py": {
+    "file_path": "src\\fusion.py",
+    "sha256": "8aab18ca050c73942b5619dbc50c6d17737dd187a06e2b65daa170d0dee44565",
+    "issues": []
+  },
+  "src\\ingestion\\__init__.py": {
+    "file_path": "src\\ingestion\\__init__.py",
+    "sha256": "40934a52f37f9e0b88cb0ed5664720e388d14d726d363c7ba1a46acca62b897a",
+    "issues": []
+  },
+  "src\\ingestion\\generator.py": {
+    "file_path": "src\\ingestion\\generator.py",
+    "sha256": "9ee51867f94555f4eae29b2170e4f529e38c2716de0654d6e858a76342c8d168",
+    "issues": []
+  },
+  "src\\ingestion\\loader.py": {
+    "file_path": "src\\ingestion\\loader.py",
+    "sha256": "e98d5c1e8ccfdbca1a8022264ae824c7bba082dafd8a4d0186cda902a3252cb1",
+    "issues": [
+      {
+        "severity": "MEDIUM",
+        "category": "Performance",
+        "file_path": "src\\ingestion\\loader.py",
+        "line_number": 43,
+        "title": "Nested Loop Detected (O(n\u00b2) Complexity)",
+        "description": "Nested loop can significantly degrade runtime performance on large datasets.",
+        "suggestion": "Use set lookups, dictionary mapping, or vectorized operations to reduce quadratic complexity to O(n).",
+        "code_example": "lookup_set = set(list_b)\nresult = [item for item in list_a if item in lookup_set]",
+        "confidence_score": 0.85,
+        "estimated_fix_minutes": 30
+      }
+    ]
+  },
+  "src\\models\\__init__.py": {
+    "file_path": "src\\models\\__init__.py",
+    "sha256": "bae4df351ce8b3038531413733d0bc086196a5a6ba957332b2635002a35d0ae5",
+    "issues": []
+  },
+  "src\\models\\physics.py": {
+    "file_path": "src\\models\\physics.py",
+    "sha256": "684e1cb516bf3940b43eeac1ab3c8ec89a623c7a4ef3920e157732e9b80ed453",
+    "issues": []
+  },
+  "src\\models\\spatial.py": {
+    "file_path": "src\\models\\spatial.py",
+    "sha256": "721eb19f37038f85f4b24ec143aa6791003bb6a68b2455b024b4a874999488af",
+    "issues": [
+      {
+        "severity": "MEDIUM",
+        "category": "Quality",
+        "file_path": "src\\models\\spatial.py",
+        "line_number": 57,
+        "title": "Deep Nesting Level (7 levels)",
+        "description": "Deeply nested code block at line 57 reduces readability and increases cognitive complexity.",
+        "suggestion": "Refactor nested conditionals using guard clauses or break logic into helper functions.",
+        "code_example": "if not condition:\n    return\n# Main logic continues here",
+        "confidence_score": 0.85,
+        "estimated_fix_minutes": 25
+      }
+    ]
+  },
+  "src\\models\\temporal.py": {
+    "file_path": "src\\models\\temporal.py",
+    "sha256": "50ee91be58c6aa0b6d61a3a49086352b045a4976a8507c4bb2efa0d8155044dc",
+    "issues": []
+  },
+  "tests\\test_fusion.py": {
+    "file_path": "tests\\test_fusion.py",
+    "sha256": "5ba6591251362536788e847841e80f1f1e7ea0a1002faec9d8226fb587bb4ffa",
+    "issues": []
+  },
+  "tests\\test_ingestion.py": {
+    "file_path": "tests\\test_ingestion.py",
+    "sha256": "82232f8716b72bec89d424327ed7305e8ae1ff7f83b1fa144597594e83723acb",
+    "issues": []
+  },
+  "tests\\test_physics.py": {
+    "file_path": "tests\\test_physics.py",
+    "sha256": "226a004d4f7575aba2e549b4949cf7da59efe91683be2fe3597a1cb99722d2dc",
+    "issues": []
+  },
+  "tests\\test_spatial.py": {
+    "file_path": "tests\\test_spatial.py",
+    "sha256": "bc5f5fd1f495ad727efd7888ea3b1402d7e4b916d270d10802e6e5f91a31847f",
+    "issues": []
+  },
+  "tests\\test_temporal.py": {
+    "file_path": "tests\\test_temporal.py",
+    "sha256": "5d1c2887fa6d5cad348f2735fc73cd255e3460616d26d80f9fcfa524d9e56b0b",
+    "issues": []
+  }
+}

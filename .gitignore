@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest / Cache
+.pytest_cache/
+.coverage
+
+# Large raw datasets (>40MB)
+max_planck_weather_ts.csv
+
+# Environment & IDE
+.venv/
+venv/
+.idea/
+.vscode/
+*.swp
