@@ -22,6 +22,7 @@ export default function App() {
   // Handle Dataset Switch with clean state reset
   const handleDatasetChange = (newDataset) => {
     if (newDataset === activeDataset) return;
+    setIsLoading(true);
     setActiveDataset(newDataset);
     if (newDataset === 'simulated') {
       setSelectedStation('AWS_DELHI_01');
@@ -35,12 +36,13 @@ export default function App() {
     async function fetchData() {
       setIsLoading(true);
       try {
-        const primaryUrl = `http://localhost:8000/api/telemetry?dataset=${activeDataset}`;
-        const proxyUrl = `/api/telemetry?dataset=${activeDataset}`;
+        const timestamp = Date.now();
+        const primaryUrl = `http://localhost:8000/api/telemetry?dataset=${activeDataset}&_t=${timestamp}`;
+        const proxyUrl = `/api/telemetry?dataset=${activeDataset}&_t=${timestamp}`;
 
-        let res = await fetch(primaryUrl).catch(() => null);
+        let res = await fetch(primaryUrl, { cache: 'no-store' }).catch(() => null);
         if (!res || !res.ok) {
-          res = await fetch(proxyUrl).catch(() => null);
+          res = await fetch(proxyUrl, { cache: 'no-store' }).catch(() => null);
         }
 
         if (res && res.ok) {
@@ -99,16 +101,16 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 relative">
         {isLoading && (
-          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs z-40 flex items-center justify-center rounded-xl">
-            <div className="flex items-center space-x-3 bg-slate-900 border border-slate-800 px-5 py-3 rounded-xl shadow-2xl">
-              <div className="w-5 h-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-sm font-medium text-slate-200">Switching Dataset Telemetry...</span>
+          <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center rounded-xl">
+            <div className="flex items-center space-x-3 bg-slate-900 border border-slate-800 px-6 py-4 rounded-xl shadow-2xl">
+              <div className="w-6 h-6 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm font-semibold text-slate-200">Loading {activeDataset === 'simulated' ? 'Simulated India AWS Network' : 'Max Planck Dataset'}...</span>
             </div>
           </div>
         )}
 
         {/* Top Metric Cards */}
-        <MetricCards key={activeDataset} metrics={metrics} />
+        <MetricCards key={`metrics-${activeDataset}-${telemetry.length}`} metrics={metrics} />
 
         {/* Tab Selector Header */}
         <div className="border-b border-slate-800 flex space-x-2 overflow-x-auto pb-1">
@@ -133,25 +135,25 @@ export default function App() {
 
         {/* TAB 1: Network Health & Disambiguation */}
         {activeTab === 'overview' && (
-          <div key={`overview-${activeDataset}`} className="space-y-6">
+          <div key={`overview-${activeDataset}-${telemetry.length}`} className="space-y-6">
             <NetworkMap
-              key={`map-${activeDataset}`}
+              key={`map-${activeDataset}-${stations.length}`}
               stations={stations}
               selectedStation={selectedStation}
               setSelectedStation={setSelectedStation}
             />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <PieChartCard key={`pie-${activeDataset}`} telemetry={telemetry} />
-              <StationRankings key={`rank-${activeDataset}`} stations={stations} />
+              <PieChartCard key={`pie-${activeDataset}-${telemetry.length}`} telemetry={telemetry} />
+              <StationRankings key={`rank-${activeDataset}-${stations.length}`} stations={stations} />
             </div>
           </div>
         )}
 
         {/* TAB 2: Self-Healing Telemetry Imputation */}
         {activeTab === 'selfhealing' && (
-          <div key={`healing-${activeDataset}-${selectedStation}`} className="space-y-6">
+          <div key={`healing-${activeDataset}-${selectedStation}-${activeTelemetry.length}`} className="space-y-6">
             <TelemetryChart
-              key={`chart-${activeDataset}-${selectedStation}`}
+              key={`chart-${activeDataset}-${selectedStation}-${activeTelemetry.length}`}
               telemetryData={activeTelemetry}
               selectedStation={selectedStation}
             />
@@ -190,19 +192,19 @@ export default function App() {
 
         {/* TAB 3: Live Alert Feed & Root Causes */}
         {activeTab === 'alerts' && (
-          <div key={`alerts-${activeDataset}`} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div key={`alerts-${activeDataset}-${anomalyAlerts.length}`} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <AlertFeed key={`alertfeed-${activeDataset}`} alerts={anomalyAlerts} />
+              <AlertFeed key={`alertfeed-${activeDataset}-${anomalyAlerts.length}`} alerts={anomalyAlerts} />
             </div>
             <div className="lg:col-span-1">
-              <PieChartCard key={`alertpie-${activeDataset}`} telemetry={telemetry} />
+              <PieChartCard key={`alertpie-${activeDataset}-${telemetry.length}`} telemetry={telemetry} />
             </div>
           </div>
         )}
 
         {/* TAB 4: 3-Layer Decoupled Signal Evidence */}
         {activeTab === 'evidence' && (
-          <ExplainabilityTable key={`evidence-${activeDataset}`} telemetryData={telemetry} />
+          <ExplainabilityTable key={`evidence-${activeDataset}-${telemetry.length}`} telemetryData={telemetry} />
         )}
       </main>
 

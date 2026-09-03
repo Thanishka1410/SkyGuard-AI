@@ -100,7 +100,15 @@ def health_check():
 def get_telemetry(dataset: str = Query("simulated")):
     dataset_key = "maxplanck" if dataset in ["maxplanck", "Max Planck Institute Real Weather Dataset (Unlabelled)"] else "simulated"
     json_data = get_serialized_dataset_cached(dataset_key)
-    return Response(content=json_data, media_type="application/json")
+    return Response(
+        content=json_data,
+        media_type="application/json",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 if __name__ == "__main__":
     import uvicorn
