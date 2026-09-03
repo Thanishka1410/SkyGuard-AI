@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Streamlit App](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B.svg)](http://localhost:8501)
 [![SIH PS 26073](https://img.shields.io/badge/SIH%202024-PS%2026073-green.svg)](https://www.sih.gov.in/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
 **Target Agency**: Ministry of Earth Sciences (MoES) / India Meteorological Department (IMD)  
 **Problem Statement 26073**: *AI/ML-Based Intelligent Anomaly Detection for Automatic Weather Stations (AWS)*
@@ -58,73 +59,112 @@ Standard single-variable thresholds generate excessive false alarms during genui
 
 ---
 
-## 📁 Repository Structure
+## 🚀 Deployment Guide (5 Ways to Deploy)
 
+### Option 1: Docker Container Deployment (Recommended)
+
+Ensure Docker and Docker Compose are installed on your system.
+
+```bash
+# 1. Clone repository
+git clone https://github.com/Thanishka1410/SkyGuard-AI.git
+cd SkyGuard-AI
+
+# 2. Build and launch container in background
+docker compose up -d --build
+
+# 3. View live app
+# Open browser at http://localhost:8501
 ```
-SkyGuard-AI/
-├── data/
-│   ├── raw/
-│   │   └── synthetic_aws_telemetry.csv  # 2,016 multi-station telemetry rows
-│   └── processed/
-│       └── mpi_jena_cleaned.csv         # Cleaned Max Planck weather dataset
-├── src/
-│   ├── ingestion/
-│   │   ├── loader.py                    # Schema validator & distance matrix generator
-│   │   └── generator.py                 # Multi-station AWS synthetic dataset generator
-│   ├── models/
-│   │   ├── physics.py                   # Layer 1: Thermodynamic & rate-of-change rules
-│   │   ├── temporal.py                  # Layer 2: Per-station Isolation Forest ML
-│   │   └── spatial.py                   # Layer 3: Geodesic k-NN IDW interpolation
-│   ├── edge/
-│   │   └── esp32_guard.py               # MicroPython C++ edge physics guard (<5KB)
-│   ├── fusion.py                        # Layer 4: Signal fusion & self-healing imputation
-│   └── explain.py                       # Layer 5: Explainability text generator
-├── dashboard/
-│   └── app.py                           # Interactive Streamlit Dashboard UI
-├── tests/
-│   ├── test_ingestion.py
-│   ├── test_physics.py
-│   ├── test_spatial.py
-│   ├── test_temporal.py
-│   └── test_fusion.py
-├── docs/
-│   ├── use_cases.md                     # Detailed system use cases
-│   ├── code_review_and_roadmap.md       # Developer code review & technical roadmap
-│   └── compliance_checklist.md          # SIH PS 26073 requirement compliance matrix
-├── main.py                              # End-to-end command-line pipeline
-└── requirements.txt
+
+To stop the Docker container:
+```bash
+docker compose down
 ```
 
 ---
 
-## ⚙️ Installation & Running
+### Option 2: Streamlit Community Cloud (Free One-Click Cloud Deployment)
 
-### 1. Clone Repository & Install Dependencies
+1. Fork this repository: `https://github.com/Thanishka1410/SkyGuard-AI`
+2. Sign in to [share.streamlit.io](https://share.streamlit.io/) using GitHub.
+3. Click **"New app"** and select:
+   - **Repository**: `Thanishka1410/SkyGuard-AI`
+   - **Branch**: `main`
+   - **Main file path**: `dashboard/app.py`
+4. Click **"Deploy!"**. Your app will be live on a public URL (`https://skyguard-ai.streamlit.app`).
+
+---
+
+### Option 3: Local / Virtual Environment Setup
 
 ```bash
+# 1. Clone repository
 git clone https://github.com/Thanishka1410/SkyGuard-AI.git
 cd SkyGuard-AI
+
+# 2. Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or: venv\Scripts\activate  # Windows
+
+# 3. Install dependencies
 pip install -r requirements.txt
-```
 
-### 2. Run Test Suite
-
-```bash
+# 4. Run test suite
 python -m pytest tests/
-```
 
-### 3. Execute End-to-End Pipeline
-
-```bash
-python main.py
-```
-
-### 4. Launch Interactive Streamlit Dashboard
-
-```bash
+# 5. Launch interactive dashboard
 streamlit run dashboard/app.py
 ```
-*Access the live dashboard in your web browser at `http://localhost:8501`*
+
+---
+
+### Option 4: Linux Server Background Systemd Deployment (AWS EC2 / Azure VM)
+
+On a Linux Virtual Machine (Ubuntu 22.04 / Debian):
+
+```bash
+# 1. Create a systemd service file
+sudo nano /etc/systemd/system/skyguard.service
+```
+
+Paste the following configuration:
+```ini
+[Unit]
+Description=SkyGuard AI Streamlit Dashboard Service
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/SkyGuard-AI
+ExecStart=/home/ubuntu/SkyGuard-AI/venv/bin/streamlit run dashboard/app.py --server.port=8501 --server.address=0.0.0.0
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the background daemon:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable skyguard
+sudo systemctl start skyguard
+```
+
+---
+
+### Option 5: ESP32 Edge Microcontroller Deployment (Low-Power Hardware)
+
+For deploying the lightweight physics guard (<5KB RAM footprint) directly on physical solar-powered AWS hardware (ESP32 microcontrollers):
+
+1. Flash **MicroPython** onto your ESP32 board using `esptool.py`.
+2. Upload [`src/edge/esp32_guard.py`](src/edge/esp32_guard.py) to your ESP32 board via `ampy` or Thonny IDE:
+   ```bash
+   ampy --port /dev/ttyUSB0 put src/edge/esp32_guard.py main.py
+   ```
+3. The ESP32 will automatically perform instantaneous edge rule filtering on physical sensor readings before sending payloads over GPRS/Satellite modems, saving 80% battery and bandwidth.
 
 ---
 
@@ -137,7 +177,7 @@ streamlit run dashboard/app.py
 | **Real-Time Capability** | **15%** | Live Streamlit UI dashboard and optimized symmetric distance calculations. |
 | **Explainability** | **10%** | Audit-proof text evidence generator detailing exact broken physics rules and neighbor deltas. |
 | **Scalability** | **10%** | Ingestion module capable of scaling to IMD's 3,500+ AWS network stations. |
-| **Practical Deployability** | **10%** | Clean modular architecture, unit test suite, and CLI entry point `main.py`. |
+| **Practical Deployability** | **10%** | Dockerized deployment, systemd integration, clean CLI entry point `main.py`. |
 | **Visualization / UI** | **5%** | Multi-tab dashboard with interactive map, dual-trace plots, alert logs, and pie charts. |
 | **Energy Efficiency** | **5%** | MicroPython ESP32 edge guard script (`src/edge/esp32_guard.py`) filtering sensor faults before transmission. |
 
