@@ -15,8 +15,10 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
-# Large raw datasets (>40MB)
+# Large raw & processed datasets (>10MB)
 max_planck_weather_ts.csv
+data/processed/
+data/raw/synthetic_aws_telemetry.csv
 
 # Environment & IDE
 .venv/
