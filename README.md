@@ -60,11 +60,41 @@ Standard single-variable thresholds generate excessive false alarms during genui
 
 ---
 
-## 💻 Tech Stack & Web Apps
+## 🎮 Live Interactive Demo Guide for Judges
 
-- **React 18 Frontend** (`frontend/`): Built with Vite, Tailwind CSS, Recharts, and Lucide React Icons. Runs on `http://localhost:3000`.
-- **FastAPI REST Service** (`src/api.py`): Serves high-performance JSON telemetry & station health REST API endpoints with pre-serialized caching. Runs on `http://localhost:8000`.
-- **Streamlit Interactive Dashboard** (`dashboard/app.py`): Real-time Python analytics app with Plotly maps and parameter sliders. Runs on `http://localhost:8501`.
+SkyGuard AI includes an **On-Demand Fault Injection Engine** (`src/data_simulator.py`) designed specifically for live hackathon judging. Judges can trigger specific sensor hardware failures on demand and observe real-time detection, scoring, and auto-correction within seconds.
+
+### How to Run the Live Demo
+
+1. **Start the FastAPI Backend Service & Live Simulator Thread**:
+   ```bash
+   python src/api.py
+   ```
+   *FastAPI starts on `http://localhost:8000` with the `LiveSimulator` background thread ticking every 1.5s.*
+
+2. **Start the React Frontend Application**:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   *Open browser at `http://localhost:3000`.*
+
+3. **Using the Demo Controls Panel**:
+   - In the top-right select dropdown, select **`🎮 Live Interactive Demo Mode (Judges Control)`**.
+   - The purple **"🎛️ Live Demo Fault Injection Panel"** will appear at the top.
+   - Select a target AWS Station (e.g. `AWS_DELHI_01` Plains or `AWS_MUMBAI_01` Coastal) and fault duration.
+   - Click any of the 5 fault injection buttons:
+     - ⚡ **Inject Thermal Spike** (`spike`): Sudden $+25^\circ\text{C}$ jump.
+     - 🧊 **Inject Frozen Sensor** (`frozen_value`): Constant flatline reading across consecutive intervals.
+     - 📈 **Inject Calibration Drift** (`calibration_drift`): Gradual $+12^\circ\text{C}$ linear ramp.
+     - 📡 **Inject Comm Loss** (`comm_loss`): Sensor signal dropout (`NaN` readings).
+     - 🔊 **Inject Noise Burst** (`noise_burst`): High-variance electrical noise.
+
+4. **What Judges Should Expect to Observe**:
+   - **Real-Time Detection Latency**: Injected faults flow through Physics $\rightarrow$ Temporal $\rightarrow$ Spatial $\rightarrow$ Fusion within **1.5 seconds**.
+   - **Severity Score & Root Cause**: Fused confidence score ($0.0 - 1.0$) and exact taxonomy label (`SPIKE`, `FROZEN_VALUE`, `CALIBRATION_DRIFT`, `COMM_LOSS`, `NOISE_BURST`).
+   - **Self-Healing Telemetry Chart**: The green line plot instantly imputes the clean expected value while red markers flag the injected raw fault.
+   - **3-Layer Audit Evidence**: The bottom table details which specific layer fired (e.g. *Physics Violations: PHYSICS_FROZEN_SENSOR* or *Spatial Comparison: Expected T: 35.3°C vs Actual: 22.9°C*).
 
 ---
 
@@ -79,7 +109,6 @@ python src/api.py
 ### 2. Launch React Frontend Application
 ```bash
 cd frontend
-npm install
 npm run dev
 # App live on http://localhost:3000
 ```

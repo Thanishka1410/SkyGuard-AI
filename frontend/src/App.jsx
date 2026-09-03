@@ -7,37 +7,45 @@ import AlertFeed from './components/AlertFeed';
 import ExplainabilityTable from './components/ExplainabilityTable';
 import PieChartCard from './components/PieChartCard';
 import StationRankings from './components/StationRankings';
+import DemoControls from './components/DemoControls';
 import { INITIAL_STATIONS, INITIAL_TELEMETRY } from './data/mockData';
-import { Map, Cpu, AlertTriangle, Layers } from 'lucide-react';
+import { Map, Cpu, AlertTriangle, Layers, Sliders } from 'lucide-react';
 
 export default function App() {
-  const [activeDataset, setActiveDataset] = useState('simulated');
+  const [activeDataset, setActiveDataset] = useState('live');
   const [selectedStation, setSelectedStation] = useState('AWS_DELHI_01');
   const [stations, setStations] = useState(INITIAL_STATIONS);
   const [telemetry, setTelemetry] = useState(INITIAL_TELEMETRY);
   const [liveStatus, setLiveStatus] = useState('SkyGuard Core Online');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showDemoControls, setShowDemoControls] = useState(true);
 
   // Handle Dataset Switch with clean state reset
   const handleDatasetChange = (newDataset) => {
     if (newDataset === activeDataset) return;
     setIsLoading(true);
-    // Clear previous dataset state to guarantee clean reactivity on multiple toggles
     setStations([]);
     setTelemetry([]);
     setActiveDataset(newDataset);
+    if (newDataset === 'simulated' || newDataset === 'live') {
+      setSelectedStation('AWS_DELHI_01');
+    } else {
+      setSelectedStation('AWS_MPI_JENA_01');
+    }
   };
 
-  // Fetch real data from FastAPI backend with instant caching and failover
+  // Fetch data from FastAPI backend (Polls every 1.5s in Live mode)
   useEffect(() => {
     let isMounted = true;
+    let timerId = null;
+
     async function fetchData() {
-      setIsLoading(true);
       try {
         const timestamp = Date.now();
-        const primaryUrl = `http://localhost:8000/api/telemetry?dataset=${activeDataset}&_t=${timestamp}`;
-        const proxyUrl = `/api/telemetry?dataset=${activeDataset}&_t=${timestamp}`;
+        const endpoint = activeDataset === 'live' ? '/api/live/telemetry' : `/api/telemetry?dataset=${activeDataset}`;
+        const primaryUrl = `http://localhost:8000${endpoint}?_t=${timestamp}`;
+        const proxyUrl = `${endpoint}?_t=${timestamp}`;
 
         let res = await fetch(primaryUrl, { cache: 'no-store' }).catch(() => null);
         if (!res || !res.ok) {
@@ -48,24 +56,22 @@ export default function App() {
           const data = await res.json();
           if (data.stations && data.stations.length > 0) {
             setStations(data.stations);
-            setSelectedStation(data.stations[0].station_id);
+            if (!data.stations.some(s => s.station_id === selectedStation)) {
+              setSelectedStation(data.stations[0].station_id);
+            }
           }
           if (data.telemetry && data.telemetry.length > 0) {
             setTelemetry(data.telemetry);
           }
-          setLiveStatus('Live FastAPI Connected');
-        } else if (isMounted) {
-          // Fallback to initial reactive mock state
+          setLiveStatus(activeDataset === 'live' ? '⚡ Live Demo Stream Active' : 'Live FastAPI Connected');
+        } else if (isMounted && telemetry.length === 0) {
           setStations(INITIAL_STATIONS);
           setTelemetry(INITIAL_TELEMETRY);
           setSelectedStation(INITIAL_STATIONS[0].station_id);
           setLiveStatus('Interactive Demo Mode');
         }
       } catch (err) {
-        if (isMounted) {
-          setStations(INITIAL_STATIONS);
-          setTelemetry(INITIAL_TELEMETRY);
-          setSelectedStation(INITIAL_STATIONS[0].station_id);
+        if (isMounted && telemetry.length === 0) {
           setLiveStatus('Interactive Demo Mode');
         }
       } finally {
@@ -77,10 +83,16 @@ export default function App() {
 
     fetchData();
 
+    // In Live mode, poll every 1.5 seconds for instant fault reflection
+    if (activeDataset === 'live') {
+      timerId = setInterval(fetchData, 1500);
+    }
+
     return () => {
       isMounted = false;
+      if (timerId) clearInterval(timerId);
     };
-  }, [activeDataset]);
+  }, [activeDataset, selectedStation]);
 
   const activeTelemetry = telemetry.filter((t) => t.station_id === selectedStation);
   const anomalyAlerts = telemetry.filter((t) => t.is_anomaly_pred);
@@ -112,13 +124,34 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 relative">
-        {isLoading && (
+        {isLoading && telemetry.length === 0 && (
           <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center rounded-xl">
             <div className="flex items-center space-x-3 bg-slate-900 border border-slate-800 px-6 py-4 rounded-xl shadow-2xl">
-              <div className="w-6 h-6 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-sm font-semibold text-slate-200">Loading {activeDataset === 'simulated' ? 'Simulated India AWS Network' : 'Max Planck Dataset'}...</span>
+              <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm font-semibold text-slate-200">Loading {activeDataset === 'live' ? 'Live Demo Stream' : activeDataset === 'simulated' ? 'Simulated India AWS Network' : 'Max Planck Dataset'}...</span>
             </div>
           </div>
+        )}
+
+        {/* Demo Controls Header Toggle */}
+        <div className="flex items-center justify-between bg-slate-900/80 border border-purple-500/30 rounded-xl px-4 py-2 text-xs">
+          <div className="flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
+            <span className="font-semibold text-purple-300">Live Demo Mode Active</span>
+            <span className="text-slate-400">({activeDataset === 'live' ? 'Interactive Fault Injection Enabled' : 'Batch Data View'})</span>
+          </div>
+          <button
+            onClick={() => setShowDemoControls(!showDemoControls)}
+            className="flex items-center space-x-1.5 px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-lg text-purple-300 transition-colors font-medium"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>{showDemoControls ? 'Hide Judge Controls' : 'Show Judge Controls'}</span>
+          </button>
+        </div>
+
+        {/* Demo Fault Injection Panel */}
+        {showDemoControls && (
+          <DemoControls onInjectSuccess={() => {}} />
         )}
 
         {/* Top Metric Cards */}
@@ -189,9 +222,9 @@ export default function App() {
                       <tr key={`${row.station_id}-${row.timestamp}-${idx}`} className="hover:bg-slate-800/40">
                         <td className="px-3 py-2 font-mono text-slate-400">{new Date(row.timestamp).toLocaleTimeString()}</td>
                         <td className="px-3 py-2 font-mono text-sky-400">{row.station_id}</td>
-                        <td className="px-3 py-2 font-medium text-rose-400">{row.temperature_C}°C</td>
-                        <td className="px-3 py-2 text-slate-300">{row.spatial_expected_temp}°C</td>
-                        <td className="px-3 py-2 text-emerald-400 font-semibold">{row.corrected_temp_C}°C</td>
+                        <td className="px-3 py-2 font-medium text-rose-400">{row.temperature_C != null ? `${row.temperature_C}°C` : 'NaN'}</td>
+                        <td className="px-3 py-2 text-slate-300">{row.spatial_expected_temp != null ? `${row.spatial_expected_temp}°C` : 'N/A'}</td>
+                        <td className="px-3 py-2 text-emerald-400 font-semibold">{row.corrected_temp_C != null ? `${row.corrected_temp_C}°C` : 'N/A'}</td>
                         <td className="px-3 py-2 font-semibold uppercase text-rose-400">{row.root_cause}</td>
                       </tr>
                     ))}

@@ -52,6 +52,45 @@ p_weight = st.sidebar.slider("Physics Weight", 0.1, 0.6, 0.40, 0.05)
 s_weight = st.sidebar.slider("Spatial Weight", 0.1, 0.6, 0.35, 0.05)
 t_weight = st.sidebar.slider("Temporal Weight", 0.1, 0.6, 0.25, 0.05)
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎮 Live Demo Fault Injection (Judges)")
+demo_station = st.sidebar.selectbox("Target Station", ["AWS_DELHI_01", "AWS_MUMBAI_01", "AWS_CHENNAI_01", "AWS_LUCKNOW_01", "AWS_SHIMLA_01", "AWS_JAISALMER_01"])
+demo_duration = st.sidebar.slider("Fault Duration (ticks)", 3, 24, 10)
+
+col_b1, col_b2 = st.sidebar.columns(2)
+if col_b1.button("⚡ Thermal Spike"):
+    try:
+        import requests
+        res = requests.post("http://localhost:8000/api/demo/inject", json={"station_id": demo_station, "anomaly_type": "spike", "duration_ticks": demo_duration}, timeout=2)
+        st.sidebar.success(f"Injected Spike on {demo_station}!")
+    except Exception as e:
+        st.sidebar.error("FastAPI server offline")
+
+if col_b2.button("🧊 Frozen Value"):
+    try:
+        import requests
+        res = requests.post("http://localhost:8000/api/demo/inject", json={"station_id": demo_station, "anomaly_type": "frozen_value", "duration_ticks": demo_duration}, timeout=2)
+        st.sidebar.success(f"Injected Frozen on {demo_station}!")
+    except Exception as e:
+        st.sidebar.error("FastAPI server offline")
+
+col_b3, col_b4 = st.sidebar.columns(2)
+if col_b3.button("📈 Drift"):
+    try:
+        import requests
+        res = requests.post("http://localhost:8000/api/demo/inject", json={"station_id": demo_station, "anomaly_type": "calibration_drift", "duration_ticks": demo_duration}, timeout=2)
+        st.sidebar.success(f"Injected Drift on {demo_station}!")
+    except Exception as e:
+        st.sidebar.error("FastAPI server offline")
+
+if col_b4.button("📡 Comm Loss"):
+    try:
+        import requests
+        res = requests.post("http://localhost:8000/api/demo/inject", json={"station_id": demo_station, "anomaly_type": "comm_loss", "duration_ticks": demo_duration}, timeout=2)
+        st.sidebar.success(f"Injected Comm Loss on {demo_station}!")
+    except Exception as e:
+        st.sidebar.error("FastAPI server offline")
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_pipeline_results(dataset_choice: str, pw: float, sw: float, tw: float):
     loader = AWSDataLoader()

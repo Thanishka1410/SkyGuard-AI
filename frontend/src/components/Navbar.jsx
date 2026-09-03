@@ -1,5 +1,5 @@
 import React from 'react';
-import { Satellite, ShieldCheck, Activity, CloudRain, Cpu } from 'lucide-react';
+import { Satellite, ShieldCheck, Activity, CloudRain, Cpu, Radio } from 'lucide-react';
 
 export default function Navbar({ activeDataset, setActiveDataset, liveStatus }) {
   return (
@@ -44,13 +44,14 @@ export default function Navbar({ activeDataset, setActiveDataset, liveStatus }) 
           <select
             value={activeDataset}
             onChange={(e) => setActiveDataset(e.target.value)}
-            className="bg-slate-800 text-slate-200 border border-slate-700 text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none"
+            className="bg-slate-800 text-slate-200 border border-purple-500/50 text-xs font-medium rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none shadow-lg"
           >
-            <option value="simulated">Simulated India AWS Network (7 Stations)</option>
-            <option value="maxplanck">Max Planck Real Unlabelled Weather Dataset</option>
+            <option value="live">🎮 Live Interactive Demo Mode (Judges Control)</option>
+            <option value="simulated">📊 Simulated India AWS Network (30-Day Batch)</option>
+            <option value="maxplanck">🌍 Max Planck Real Unlabelled Weather Dataset</option>
           </select>
 
-          <div className="flex items-center space-x-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium">
+          <div className="flex items-center space-x-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>{liveStatus}</span>
           </div>

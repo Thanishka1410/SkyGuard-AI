@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 
 from src.ingestion.loader import AWSDataLoader
-from src.ingestion.generator import generate_synthetic_aws_data
+from src.data_simulator import generate_batch_dataset
 from src.fusion import FusionEngine
 from src.explain import ExplanationGenerator
 
@@ -19,12 +19,18 @@ def main():
 
     # --- PART 1: Simulated Multi-Station Network ---
     print("\n[PART 1] Running 3-Layer Pipeline on Simulated Multi-Station Telemetry...")
+    sim_file = "data/simulated_aws_data.csv"
     syn_file = "data/raw/synthetic_aws_telemetry.csv"
-    if not os.path.exists(syn_file):
-        df_syn = generate_synthetic_aws_data(num_days=3)
-        df_syn.to_csv(syn_file, index=False)
-    else:
+
+    if os.path.exists(sim_file):
+        print(f"  Loading batch dataset from '{sim_file}'...")
+        df_syn = loader.load_data(sim_file).iloc[:3000].copy()
+    elif os.path.exists(syn_file):
+        print(f"  Loading dataset from '{syn_file}'...")
         df_syn = loader.load_data(syn_file)
+    else:
+        print("  Generating fresh simulated AWS dataset...")
+        df_syn = generate_batch_dataset(days=3, output_path=sim_file)
 
     processed_syn = engine.process_pipeline(df_syn, train_baseline=True)
     final_syn = explainer.add_explanations_to_dataframe(processed_syn)
@@ -54,8 +60,8 @@ def main():
         else:
             df_real = loader.load_data(cleaned_real_file)
 
-        # Process first 5,000 rows for demonstration
-        sample_real = df_real.iloc[:5000].copy()
+        # Process first 3,000 rows for demonstration
+        sample_real = df_real.iloc[:3000].copy()
         processed_real = engine.process_pipeline(sample_real, train_baseline=True)
         final_real = explainer.add_explanations_to_dataframe(processed_real)
 
@@ -69,8 +75,10 @@ def main():
 
     print("\n" + "=" * 70)
     print("  Pipeline execution complete!")
-    print("  To launch the interactive dashboard, run:")
-    print("  streamlit run dashboard/app.py")
+    print("  To launch the React Frontend live demo, run:")
+    print("    cd frontend && npm run dev")
+    print("  To launch the Streamlit Dashboard, run:")
+    print("    streamlit run dashboard/app.py")
     print("=" * 70)
 
 if __name__ == "__main__":
