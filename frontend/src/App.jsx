@@ -5,7 +5,10 @@ import NetworkMap from './components/NetworkMap';
 import TelemetryChart from './components/TelemetryChart';
 import AlertFeed from './components/AlertFeed';
 import ExplainabilityTable from './components/ExplainabilityTable';
+import PieChartCard from './components/PieChartCard';
+import StationRankings from './components/StationRankings';
 import { INITIAL_STATIONS, INITIAL_TELEMETRY } from './data/mockData';
+import { Map, Cpu, AlertTriangle, Layers } from 'lucide-react';
 
 export default function App() {
   const [activeDataset, setActiveDataset] = useState('simulated');
@@ -14,6 +17,7 @@ export default function App() {
   const [telemetry, setTelemetry] = useState(INITIAL_TELEMETRY);
   const [liveStatus, setLiveStatus] = useState('SkyGuard Core Online');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Fetch real data from FastAPI backend with instant caching
   useEffect(() => {
@@ -25,7 +29,6 @@ export default function App() {
           const data = await res.json();
           if (data.stations && data.stations.length > 0) {
             setStations(data.stations);
-            // Default selectedStation to first available station in dataset
             if (!data.stations.some(s => s.station_id === selectedStation)) {
               setSelectedStation(data.stations[0].station_id);
             }
@@ -54,6 +57,13 @@ export default function App() {
     activeStations: stations.length
   };
 
+  const tabs = [
+    { id: 'overview', label: '🗺️ Network Health & Disambiguation', icon: Map },
+    { id: 'selfhealing', label: '🩹 Self-Healing Telemetry Imputation', icon: Cpu },
+    { id: 'alerts', label: '🚨 Live Alert Feed & Root Causes', icon: AlertTriangle },
+    { id: 'evidence', label: '🔬 3-Layer Decoupled Signal Evidence', icon: Layers }
+  ];
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Navigation Bar */}
@@ -77,28 +87,98 @@ export default function App() {
         {/* Top Metric Cards */}
         <MetricCards metrics={metrics} />
 
-        {/* Station Network Map */}
-        <NetworkMap
-          stations={stations}
-          selectedStation={selectedStation}
-          setSelectedStation={setSelectedStation}
-        />
+        {/* Tab Selector Header */}
+        <div className="border-b border-slate-800 flex space-x-2 overflow-x-auto pb-1">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-2.5 rounded-t-lg font-medium text-xs transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-slate-900 text-sky-400 border-t-2 border-sky-400 border-x border-slate-800'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+                }`}
+              >
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-        {/* Telemetry Chart & Alert Feed Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        {/* TAB 1: Network Health & Disambiguation */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            <NetworkMap
+              stations={stations}
+              selectedStation={selectedStation}
+              setSelectedStation={setSelectedStation}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <PieChartCard telemetry={telemetry} />
+              <StationRankings stations={stations} />
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: Self-Healing Telemetry Imputation */}
+        {activeTab === 'selfhealing' && (
+          <div className="space-y-6">
             <TelemetryChart
               telemetryData={activeTelemetry.length > 0 ? activeTelemetry : telemetry}
               selectedStation={selectedStation}
             />
+            {/* Raw vs Imputed Table for Anomalies */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+              <h3 className="text-sm font-semibold text-white mb-3">Raw vs Self-Healing Imputed Table (Anomalies Only)</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 font-medium uppercase border-b border-slate-800">
+                    <tr>
+                      <th className="px-3 py-2">Timestamp</th>
+                      <th className="px-3 py-2">Station</th>
+                      <th className="px-3 py-2">Raw Temp</th>
+                      <th className="px-3 py-2">Spatial Expected</th>
+                      <th className="px-3 py-2">Self-Healing Imputed</th>
+                      <th className="px-3 py-2">Root Cause</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {anomalyAlerts.slice(0, 10).map((row, idx) => (
+                      <tr key={idx} className="hover:bg-slate-800/40">
+                        <td className="px-3 py-2 font-mono text-slate-400">{new Date(row.timestamp).toLocaleTimeString()}</td>
+                        <td className="px-3 py-2 font-mono text-sky-400">{row.station_id}</td>
+                        <td className="px-3 py-2 font-medium text-rose-400">{row.temperature_C}°C</td>
+                        <td className="px-3 py-2 text-slate-300">{row.spatial_expected_temp}°C</td>
+                        <td className="px-3 py-2 text-emerald-400 font-semibold">{row.corrected_temp_C}°C</td>
+                        <td className="px-3 py-2 font-semibold uppercase text-rose-400">{row.root_cause}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-          <div className="lg:col-span-1">
-            <AlertFeed alerts={anomalyAlerts} />
-          </div>
-        </div>
+        )}
 
-        {/* Explainability Signal Table */}
-        <ExplainabilityTable telemetryData={telemetry} />
+        {/* TAB 3: Live Alert Feed & Root Causes */}
+        {activeTab === 'alerts' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <AlertFeed alerts={anomalyAlerts} />
+            </div>
+            <div className="lg:col-span-1">
+              <PieChartCard telemetry={telemetry} />
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: 3-Layer Decoupled Signal Evidence */}
+        {activeTab === 'evidence' && (
+          <ExplainabilityTable telemetryData={telemetry} />
+        )}
       </main>
 
       {/* Footer */}
