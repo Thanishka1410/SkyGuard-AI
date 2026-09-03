@@ -19,22 +19,31 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Fetch real data from FastAPI backend with instant caching
+  // Fetch real data from FastAPI backend with instant caching and failover
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/telemetry?dataset=${activeDataset}`);
-        if (res.ok) {
+        const primaryUrl = `http://localhost:8000/api/telemetry?dataset=${activeDataset}`;
+        const proxyUrl = `/api/telemetry?dataset=${activeDataset}`;
+
+        let res = await fetch(primaryUrl).catch(() => null);
+        if (!res || !res.ok) {
+          res = await fetch(proxyUrl).catch(() => null);
+        }
+
+        if (res && res.ok) {
           const data = await res.json();
           if (data.stations && data.stations.length > 0) {
             setStations(data.stations);
-            if (!data.stations.some(s => s.station_id === selectedStation)) {
-              setSelectedStation(data.stations[0].station_id);
-            }
+            setSelectedStation(data.stations[0].station_id);
           }
-          if (data.telemetry) setTelemetry(data.telemetry);
+          if (data.telemetry && data.telemetry.length > 0) {
+            setTelemetry(data.telemetry);
+          }
           setLiveStatus('Live FastAPI Connected');
+        } else {
+          setLiveStatus('Interactive Demo Mode');
         }
       } catch (err) {
         setLiveStatus('Interactive Demo Mode');
