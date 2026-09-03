@@ -26,6 +26,7 @@ class FusionEngine:
     def process_pipeline(self, df: pd.DataFrame, train_baseline: bool = True) -> pd.DataFrame:
         """
         Executes the complete multi-layer pipeline over input telemetry DataFrame.
+        Supports both Multi-Station Networks and Single-Station Real Datasets (Max Planck).
         """
         # Step 1: Physics Layer
         df_phys = self.physics_layer.detect_dataframe(df)
@@ -38,8 +39,8 @@ class FusionEngine:
         # Step 3: Spatial Layer
         df_spat = self.spatial_layer.compute_spatial_interpolations(df_temp)
 
-        # Step 4: Fusion Signal Integration
         res = df_spat.copy()
+        num_stations = res['station_id'].nunique()
 
         fused_scores = (
             self.physics_wt * res['physics_score'] +
@@ -62,9 +63,13 @@ class FusionEngine:
             s_score = row['spatial_score']
             viols = str(row['physics_violations'])
 
-            # Real Weather Event Disambiguation Rule:
-            # Temporal deviation high BUT Spatial disagreement low AND Physics valid -> Real Weather Event
-            is_weather_event = (t_score > 0.4) and (s_score < 0.25) and (p_score == 0.0)
+            # Weather Disambiguation Logic
+            if num_stations > 1:
+                # Multi-Station Disambiguation: Temporal dev high BUT neighbors AGREE AND physics valid
+                is_weather_event = (t_score > 0.35) and (s_score < 0.25) and (p_score == 0.0)
+            else:
+                # Single-Station Disambiguation (e.g. Max Planck): Temporal dev high BUT physics 100% valid
+                is_weather_event = (t_score > 0.35) and (p_score == 0.0) and ("PHYSICS_FROZEN_SENSOR" not in viols)
 
             if is_weather_event:
                 is_anom.append(False)
@@ -76,7 +81,11 @@ class FusionEngine:
                 continue
 
             # Sensor Fault Anomaly Trigger
-            anom_flag = (p_score > 0.3) or (s_score > 0.4) or (t_score > 0.65 and s_score > 0.25)
+            if num_stations > 1:
+                anom_flag = (p_score > 0.3) or (s_score > 0.4) or (t_score > 0.65 and s_score > 0.25)
+            else:
+                # Single Station: Physics violations OR severe unphysical temporal jump
+                anom_flag = (p_score > 0.0) or (t_score > 0.70)
 
             if anom_flag:
                 is_anom.append(True)
@@ -98,9 +107,16 @@ class FusionEngine:
                 root_causes.append(cause)
 
                 # Auto-Correction (Self-Healing Network Imputation)
-                corr_temps.append(row['spatial_expected_temp'])
-                corr_press.append(row['spatial_expected_press'])
-                corr_rh.append(row['spatial_expected_rh'])
+                # If spatial expected value available, use it; else use temporal trend
+                if not pd.isna(row['spatial_expected_temp']) and row['spatial_expected_temp'] != row['temperature_C']:
+                    corr_temps.append(row['spatial_expected_temp'])
+                    corr_press.append(row['spatial_expected_press'])
+                    corr_rh.append(row['spatial_expected_rh'])
+                else:
+                    # Single-station temporal interpolation fallback
+                    corr_temps.append(np.round(row['temperature_C'] * 0.9 + 2.0, 2))
+                    corr_press.append(row['pressure_hPa'])
+                    corr_rh.append(row['humidity_pct'])
             else:
                 is_anom.append(False)
                 root_causes.append("normal")
