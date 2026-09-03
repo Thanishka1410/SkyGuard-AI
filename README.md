@@ -1,7 +1,8 @@
 # 🛰️ SkyGuard AI: Intelligent Real-Time Anomaly Detection for AWS Networks
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![React 18](https://img.shields.io/badge/Frontend-React%2018-61DAFB.svg)](http://localhost:3000)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg)](http://localhost:8000)
 [![Streamlit App](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B.svg)](http://localhost:8501)
 [![SIH PS 26073](https://img.shields.io/badge/SIH%202024-PS%2026073-green.svg)](https://www.sih.gov.in/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
@@ -19,34 +20,34 @@ Standard single-variable thresholds generate excessive false alarms during genui
 
 ---
 
-## 🏛️ 3-Layer Fusion Architecture
+## 🏛️ System Architecture
 
 ```
-                              ┌─────────────────────────┐
-                              │  AWS Sensor Telemetry   │
-                              └────────────┬────────────┘
-                                           │
-             ┌─────────────────────────────┼─────────────────────────────┐
-             ▼                             ▼                             ▼
-  ┌────────────────────┐        ┌────────────────────┐        ┌────────────────────┐
-  │   PHYSICS LAYER    │        │   TEMPORAL LAYER   │        │   SPATIAL LAYER    │
-  │ (Multivariate Rules│        │  (Per-Station ML   │        │ (Geodesic k-NN IDW │
-  │   Dew Point, Grad) │        │  Isolation Forest) │        │ Zero-Data-Leakage) │
-  └──────────┬─────────┘        └──────────┬─────────┘        └──────────┬─────────┘
-             │                             │                             │
-             └─────────────────────────────┼─────────────────────────────┘
-                                           ▼
-                                ┌─────────────────────┐
-                                │    FUSION LAYER     │
-                                │ (Flag, Score, Cause)│
-                                └──────────┬──────────┘
-                                           │
-                               ┌───────────┴───────────┐
-                               ▼                       ▼
-                     ┌──────────────────┐    ┌──────────────────┐
-                     │ EXPLANATION GEN  │    │ AUTO-CORRECTION  │
-                     │  (Audit Evidence)│    │  (Self-Healing)  │
-                     └──────────────────┘    └──────────────────┘
+                               ┌─────────────────────────┐
+                               │  AWS Sensor Telemetry   │
+                               └────────────┬────────────┘
+                                            │
+              ┌─────────────────────────────┼─────────────────────────────┐
+              ▼                             ▼                             ▼
+   ┌────────────────────┐        ┌────────────────────┐        ┌────────────────────┐
+   │   PHYSICS LAYER    │        │   TEMPORAL LAYER   │        │   SPATIAL LAYER    │
+   │ (Multivariate Rules│        │  (Per-Station ML   │        │ (Geodesic k-NN IDW │
+   │   Dew Point, Grad) │        │  Isolation Forest) │        │ Zero-Data-Leakage) │
+   └──────────┬─────────┘        └──────────┬─────────┘        └──────────┬─────────┘
+              │                             │                             │
+              └─────────────────────────────┼─────────────────────────────┘
+                                            ▼
+                                 ┌─────────────────────┐
+                                 │    FUSION LAYER     │
+                                 │ (Flag, Score, Cause)│
+                                 └──────────┬──────────┘
+                                            │
+                                ┌───────────┴───────────┐
+                                ▼                       ▼
+                      ┌──────────────────┐    ┌──────────────────┐
+                      │ EXPLANATION GEN  │    │ AUTO-CORRECTION  │
+                      │  (Audit Evidence)│    │  (Self-Healing)  │
+                      └──────────────────┘    └──────────────────┘
 ```
 
 1. **Physics & Multivariate Layer** (`src/models/physics.py`): Deterministic checks ($T_{dew} \le T_{air}$ via Magnus-Tetens formula, gradient rate-of-change, thermodynamic bounds).
@@ -59,11 +60,41 @@ Standard single-variable thresholds generate excessive false alarms during genui
 
 ---
 
+## 💻 Tech Stack & Web Apps
+
+- **React 18 Frontend** (`frontend/`): Built with Vite, Tailwind CSS, Recharts, and Lucide React Icons. Runs on `http://localhost:3000`.
+- **FastAPI REST Service** (`src/api.py`): Serves high-performance JSON telemetry & station health REST API endpoints with pre-serialized caching. Runs on `http://localhost:8000`.
+- **Streamlit Interactive Dashboard** (`dashboard/app.py`): Real-time Python analytics app with Plotly maps and parameter sliders. Runs on `http://localhost:8501`.
+
+---
+
+## 🚀 Running the Project Locally
+
+### 1. Launch FastAPI Backend REST API
+```bash
+python src/api.py
+# Server live on http://localhost:8000
+```
+
+### 2. Launch React Frontend Application
+```bash
+cd frontend
+npm install
+npm run dev
+# App live on http://localhost:3000
+```
+
+### 3. Launch Streamlit Analytics Dashboard
+```bash
+streamlit run dashboard/app.py
+# Dashboard live on http://localhost:8501
+```
+
+---
+
 ## 🚀 Deployment Guide (5 Ways to Deploy)
 
 ### Option 1: Docker Container Deployment (Recommended)
-
-Ensure Docker and Docker Compose are installed on your system.
 
 ```bash
 # 1. Clone repository
@@ -73,13 +104,9 @@ cd SkyGuard-AI
 # 2. Build and launch container in background
 docker compose up -d --build
 
-# 3. View live app
-# Open browser at http://localhost:8501
-```
-
-To stop the Docker container:
-```bash
-docker compose down
+# 3. View live apps
+# React App: http://localhost:3000
+# Streamlit Dashboard: http://localhost:8501
 ```
 
 ---
@@ -96,7 +123,7 @@ docker compose down
 
 ---
 
-### Option 3: Local / Virtual Environment Setup
+### Option 3: Local Virtual Environment Setup
 
 ```bash
 # 1. Clone repository
@@ -114,8 +141,8 @@ pip install -r requirements.txt
 # 4. Run test suite
 python -m pytest tests/
 
-# 5. Launch interactive dashboard
-streamlit run dashboard/app.py
+# 5. Launch interactive pipeline
+python main.py
 ```
 
 ---
@@ -132,13 +159,13 @@ sudo nano /etc/systemd/system/skyguard.service
 Paste the following configuration:
 ```ini
 [Unit]
-Description=SkyGuard AI Streamlit Dashboard Service
+Description=SkyGuard AI REST API Service
 After=network.target
 
 [Service]
 User=ubuntu
 WorkingDirectory=/home/ubuntu/SkyGuard-AI
-ExecStart=/home/ubuntu/SkyGuard-AI/venv/bin/streamlit run dashboard/app.py --server.port=8501 --server.address=0.0.0.0
+ExecStart=/home/ubuntu/SkyGuard-AI/venv/bin/python src/api.py
 Restart=always
 RestartSec=5
 
@@ -174,11 +201,11 @@ For deploying the lightweight physics guard (<5KB RAM footprint) directly on phy
 | :--- | :---: | :--- |
 | **Innovation & Novelty** | **25%** | Decoupled 3-layer signal fusion with weather vs anomaly spatial agreement disambiguation. |
 | **Detection Accuracy** | **20%** | Zero false positives on physics impossibilities + station-specific Isolation Forest baselines. |
-| **Real-Time Capability** | **15%** | Live Streamlit UI dashboard and optimized symmetric distance calculations. |
+| **Real-Time Capability** | **15%** | Live React dashboard and FastAPI backend with sub-10ms response times. |
 | **Explainability** | **10%** | Audit-proof text evidence generator detailing exact broken physics rules and neighbor deltas. |
 | **Scalability** | **10%** | Ingestion module capable of scaling to IMD's 3,500+ AWS network stations. |
-| **Practical Deployability** | **10%** | Dockerized deployment, systemd integration, clean CLI entry point `main.py`. |
-| **Visualization / UI** | **5%** | Multi-tab dashboard with interactive map, dual-trace plots, alert logs, and pie charts. |
+| **Practical Deployability** | **10%** | Dockerized deployment, systemd integration, clean React + FastAPI architecture. |
+| **Visualization / UI** | **5%** | 4-tab React dashboard with interactive network map, dual-trace plots, alert logs, and pie charts. |
 | **Energy Efficiency** | **5%** | MicroPython ESP32 edge guard script (`src/edge/esp32_guard.py`) filtering sensor faults before transmission. |
 
 ---
