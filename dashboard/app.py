@@ -52,7 +52,7 @@ p_weight = st.sidebar.slider("Physics Weight", 0.1, 0.6, 0.40, 0.05)
 s_weight = st.sidebar.slider("Spatial Weight", 0.1, 0.6, 0.35, 0.05)
 t_weight = st.sidebar.slider("Temporal Weight", 0.1, 0.6, 0.25, 0.05)
 
-@st.cache_data
+@st.cache_data(ttl=3600, show_spinner=False)
 def get_pipeline_results(dataset_choice: str, pw: float, sw: float, tw: float):
     loader = AWSDataLoader()
     engine = FusionEngine(physics_wt=pw, spatial_wt=sw, temporal_wt=tw)
@@ -69,14 +69,13 @@ def get_pipeline_results(dataset_choice: str, pw: float, sw: float, tw: float):
         else:
             df = loader.load_data(REAL_CLEANED_DATA_PATH)
         # Subsample for fast UI responsiveness
-        df = df.iloc[:2000].copy()
+        df = df.iloc[:1500].copy()
 
     processed_df = engine.process_pipeline(df, train_baseline=True)
     final_df = explainer.add_explanations_to_dataframe(processed_df)
     return final_df
 
-with st.spinner("Processing 3-Layer Anomaly Detection & Self-Healing Engine..."):
-    df_results = get_pipeline_results(data_option, p_weight, s_weight, t_weight)
+df_results = get_pipeline_results(data_option, p_weight, s_weight, t_weight)
 
 # Top Metrics Row
 col1, col2, col3, col4, col5 = st.columns(5)

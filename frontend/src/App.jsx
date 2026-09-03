@@ -13,21 +13,30 @@ export default function App() {
   const [stations, setStations] = useState(INITIAL_STATIONS);
   const [telemetry, setTelemetry] = useState(INITIAL_TELEMETRY);
   const [liveStatus, setLiveStatus] = useState('SkyGuard Core Online');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch real data from FastAPI backend if available
+  // Fetch real data from FastAPI backend with instant caching
   useEffect(() => {
     async function fetchData() {
+      setIsLoading(true);
       try {
         const res = await fetch(`/api/telemetry?dataset=${activeDataset}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.stations) setStations(data.stations);
+          if (data.stations && data.stations.length > 0) {
+            setStations(data.stations);
+            // Default selectedStation to first available station in dataset
+            if (!data.stations.some(s => s.station_id === selectedStation)) {
+              setSelectedStation(data.stations[0].station_id);
+            }
+          }
           if (data.telemetry) setTelemetry(data.telemetry);
           setLiveStatus('Live FastAPI Connected');
         }
       } catch (err) {
-        // Fallback to initial reactive mock state
         setLiveStatus('Interactive Demo Mode');
+      } finally {
+        setIsLoading(false);
       }
     }
     fetchData();
@@ -55,7 +64,16 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs z-40 flex items-center justify-center rounded-xl">
+            <div className="flex items-center space-x-3 bg-slate-900 border border-slate-800 px-5 py-3 rounded-xl shadow-2xl">
+              <div className="w-5 h-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm font-medium text-slate-200">Switching Dataset Telemetry...</span>
+            </div>
+          </div>
+        )}
+
         {/* Top Metric Cards */}
         <MetricCards metrics={metrics} />
 
