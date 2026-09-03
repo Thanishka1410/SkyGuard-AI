@@ -1,0 +1,70 @@
+import React from 'react';
+import { Layers, ShieldAlert, Cpu } from 'lucide-react';
+
+export default function ExplainabilityTable({ telemetryData }) {
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-base font-semibold text-white flex items-center gap-2">
+            <Layers className="w-5 h-5 text-purple-400" />
+            3-Layer Signal Evidence & Disambiguation Matrix
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Decoupled Physics (S_physics), Temporal ML (S_temporal), and Spatial IDW (S_spatial) score breakdown
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs text-slate-300">
+          <thead className="bg-slate-950 text-slate-400 font-medium uppercase border-b border-slate-800">
+            <tr>
+              <th className="px-3 py-2.5">Timestamp</th>
+              <th className="px-3 py-2.5">Station</th>
+              <th className="px-3 py-2.5">Raw Temp</th>
+              <th className="px-3 py-2.5">Imputed Temp</th>
+              <th className="px-3 py-2.5 text-center">Physics Score</th>
+              <th className="px-3 py-2.5 text-center">Temporal Score</th>
+              <th className="px-3 py-2.5 text-center">Spatial Score</th>
+              <th className="px-3 py-2.5">Root Cause</th>
+              <th className="px-3 py-2.5">Evidence Details</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/60">
+            {telemetryData.slice(0, 15).map((row, idx) => {
+              const isAnomaly = row.is_anomaly_pred;
+              return (
+                <tr key={idx} className={isAnomaly ? 'bg-rose-500/5' : 'hover:bg-slate-800/40'}>
+                  <td className="px-3 py-2 font-mono text-slate-400">{new Date(row.timestamp).toLocaleTimeString()}</td>
+                  <td className="px-3 py-2 font-mono text-sky-400 font-medium">{row.station_id}</td>
+                  <td className="px-3 py-2 font-medium text-white">{row.temperature_C}°C</td>
+                  <td className="px-3 py-2 text-emerald-400 font-medium">{row.corrected_temp_C}°C</td>
+                  <td className="px-3 py-2 text-center font-mono">
+                    <span className={`px-2 py-0.5 rounded text-[11px] ${row.physics_score > 0 ? 'bg-rose-500/20 text-rose-400' : 'text-slate-400'}`}>
+                      {row.physics_score}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-center font-mono">
+                    <span className={`px-2 py-0.5 rounded text-[11px] ${row.temporal_score > 0.4 ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400'}`}>
+                      {row.temporal_score}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-center font-mono">
+                    <span className={`px-2 py-0.5 rounded text-[11px] ${row.spatial_score > 0.4 ? 'bg-purple-500/20 text-purple-400' : 'text-slate-400'}`}>
+                      {row.spatial_score}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 font-semibold uppercase text-[11px]">
+                    <span className={isAnomaly ? 'text-rose-400' : 'text-slate-400'}>{row.root_cause}</span>
+                  </td>
+                  <td className="px-3 py-2 text-slate-400 max-w-xs truncate">{row.explanation}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
