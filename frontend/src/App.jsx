@@ -23,7 +23,6 @@ export default function App() {
   const handleDatasetChange = (newDataset) => {
     if (newDataset === activeDataset) return;
     setActiveDataset(newDataset);
-    // Reset selected station depending on dataset
     if (newDataset === 'simulated') {
       setSelectedStation('AWS_DELHI_01');
     } else {
@@ -109,7 +108,7 @@ export default function App() {
         )}
 
         {/* Top Metric Cards */}
-        <MetricCards metrics={metrics} />
+        <MetricCards key={activeDataset} metrics={metrics} />
 
         {/* Tab Selector Header */}
         <div className="border-b border-slate-800 flex space-x-2 overflow-x-auto pb-1">
@@ -134,23 +133,25 @@ export default function App() {
 
         {/* TAB 1: Network Health & Disambiguation */}
         {activeTab === 'overview' && (
-          <div className="space-y-6">
+          <div key={`overview-${activeDataset}`} className="space-y-6">
             <NetworkMap
+              key={`map-${activeDataset}`}
               stations={stations}
               selectedStation={selectedStation}
               setSelectedStation={setSelectedStation}
             />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <PieChartCard telemetry={telemetry} />
-              <StationRankings stations={stations} />
+              <PieChartCard key={`pie-${activeDataset}`} telemetry={telemetry} />
+              <StationRankings key={`rank-${activeDataset}`} stations={stations} />
             </div>
           </div>
         )}
 
         {/* TAB 2: Self-Healing Telemetry Imputation */}
         {activeTab === 'selfhealing' && (
-          <div className="space-y-6">
+          <div key={`healing-${activeDataset}-${selectedStation}`} className="space-y-6">
             <TelemetryChart
+              key={`chart-${activeDataset}-${selectedStation}`}
               telemetryData={activeTelemetry}
               selectedStation={selectedStation}
             />
@@ -171,7 +172,7 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-slate-800">
                     {anomalyAlerts.slice(0, 10).map((row, idx) => (
-                      <tr key={idx} className="hover:bg-slate-800/40">
+                      <tr key={`${row.station_id}-${row.timestamp}-${idx}`} className="hover:bg-slate-800/40">
                         <td className="px-3 py-2 font-mono text-slate-400">{new Date(row.timestamp).toLocaleTimeString()}</td>
                         <td className="px-3 py-2 font-mono text-sky-400">{row.station_id}</td>
                         <td className="px-3 py-2 font-medium text-rose-400">{row.temperature_C}°C</td>
@@ -189,19 +190,19 @@ export default function App() {
 
         {/* TAB 3: Live Alert Feed & Root Causes */}
         {activeTab === 'alerts' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div key={`alerts-${activeDataset}`} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <AlertFeed alerts={anomalyAlerts} />
+              <AlertFeed key={`alertfeed-${activeDataset}`} alerts={anomalyAlerts} />
             </div>
             <div className="lg:col-span-1">
-              <PieChartCard telemetry={telemetry} />
+              <PieChartCard key={`alertpie-${activeDataset}`} telemetry={telemetry} />
             </div>
           </div>
         )}
 
         {/* TAB 4: 3-Layer Decoupled Signal Evidence */}
         {activeTab === 'evidence' && (
-          <ExplainabilityTable telemetryData={telemetry} />
+          <ExplainabilityTable key={`evidence-${activeDataset}`} telemetryData={telemetry} />
         )}
       </main>
 
