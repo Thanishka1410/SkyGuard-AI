@@ -19,6 +19,18 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Handle Dataset Switch with clean state reset
+  const handleDatasetChange = (newDataset) => {
+    if (newDataset === activeDataset) return;
+    setActiveDataset(newDataset);
+    // Reset selected station depending on dataset
+    if (newDataset === 'simulated') {
+      setSelectedStation('AWS_DELHI_01');
+    } else {
+      setSelectedStation('AWS_MPI_JENA_01');
+    }
+  };
+
   // Fetch real data from FastAPI backend with instant caching and failover
   useEffect(() => {
     async function fetchData() {
@@ -36,7 +48,10 @@ export default function App() {
           const data = await res.json();
           if (data.stations && data.stations.length > 0) {
             setStations(data.stations);
-            setSelectedStation(data.stations[0].station_id);
+            const validStation = data.stations.some(s => s.station_id === selectedStation)
+              ? selectedStation
+              : data.stations[0].station_id;
+            setSelectedStation(validStation);
           }
           if (data.telemetry && data.telemetry.length > 0) {
             setTelemetry(data.telemetry);
@@ -78,7 +93,7 @@ export default function App() {
       {/* Navigation Bar */}
       <Navbar
         activeDataset={activeDataset}
-        setActiveDataset={setActiveDataset}
+        setActiveDataset={handleDatasetChange}
         liveStatus={liveStatus}
       />
 
@@ -136,7 +151,7 @@ export default function App() {
         {activeTab === 'selfhealing' && (
           <div className="space-y-6">
             <TelemetryChart
-              telemetryData={activeTelemetry.length > 0 ? activeTelemetry : telemetry}
+              telemetryData={activeTelemetry}
               selectedStation={selectedStation}
             />
             {/* Raw vs Imputed Table for Anomalies */}
