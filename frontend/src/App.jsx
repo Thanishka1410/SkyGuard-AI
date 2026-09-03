@@ -23,16 +23,15 @@ export default function App() {
   const handleDatasetChange = (newDataset) => {
     if (newDataset === activeDataset) return;
     setIsLoading(true);
+    // Clear previous dataset state to guarantee clean reactivity on multiple toggles
+    setStations([]);
+    setTelemetry([]);
     setActiveDataset(newDataset);
-    if (newDataset === 'simulated') {
-      setSelectedStation('AWS_DELHI_01');
-    } else {
-      setSelectedStation('AWS_MPI_JENA_01');
-    }
   };
 
   // Fetch real data from FastAPI backend with instant caching and failover
   useEffect(() => {
+    let isMounted = true;
     async function fetchData() {
       setIsLoading(true);
       try {
@@ -45,29 +44,42 @@ export default function App() {
           res = await fetch(proxyUrl, { cache: 'no-store' }).catch(() => null);
         }
 
-        if (res && res.ok) {
+        if (res && res.ok && isMounted) {
           const data = await res.json();
           if (data.stations && data.stations.length > 0) {
             setStations(data.stations);
-            const validStation = data.stations.some(s => s.station_id === selectedStation)
-              ? selectedStation
-              : data.stations[0].station_id;
-            setSelectedStation(validStation);
+            setSelectedStation(data.stations[0].station_id);
           }
           if (data.telemetry && data.telemetry.length > 0) {
             setTelemetry(data.telemetry);
           }
           setLiveStatus('Live FastAPI Connected');
-        } else {
+        } else if (isMounted) {
+          // Fallback to initial reactive mock state
+          setStations(INITIAL_STATIONS);
+          setTelemetry(INITIAL_TELEMETRY);
+          setSelectedStation(INITIAL_STATIONS[0].station_id);
           setLiveStatus('Interactive Demo Mode');
         }
       } catch (err) {
-        setLiveStatus('Interactive Demo Mode');
+        if (isMounted) {
+          setStations(INITIAL_STATIONS);
+          setTelemetry(INITIAL_TELEMETRY);
+          setSelectedStation(INITIAL_STATIONS[0].station_id);
+          setLiveStatus('Interactive Demo Mode');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
+
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [activeDataset]);
 
   const activeTelemetry = telemetry.filter((t) => t.station_id === selectedStation);
@@ -154,7 +166,7 @@ export default function App() {
           <div key={`healing-${activeDataset}-${selectedStation}-${activeTelemetry.length}`} className="space-y-6">
             <TelemetryChart
               key={`chart-${activeDataset}-${selectedStation}-${activeTelemetry.length}`}
-              telemetryData={activeTelemetry}
+              telemetryData={activeTelemetry.length > 0 ? activeTelemetry : telemetry}
               selectedStation={selectedStation}
             />
             {/* Raw vs Imputed Table for Anomalies */}
