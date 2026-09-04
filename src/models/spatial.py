@@ -3,40 +3,39 @@ import pandas as pd
 from typing import Dict, List, Tuple
 from geopy.distance import geodesic
 
-class SpatialAnomalyDetector:
+class SpatialFusionLayer:
     """
-    Spatial Layer: Uses lat/lon ONLY to determine geographic distance to neighbors (k-NN / IDW).
-    Computes spatial expected values and measures residual disagreement between station telemetry
-    and its surrounding neighbor network.
-
-    Core Disambiguation Logic:
-    - High Temporal Deviation + Neighbors DISAGREE -> Sensor Fault (Anomaly)
-    - High Temporal Deviation + Neighbors AGREE    -> Real Extreme Weather Event (Not Anomaly)
+    Geodesic Spatial Fusion Layer using Inverse Distance Weighting (IDW).
+    Compares target station reading with geographic k-NN neighbors.
+    CRITICAL: Station location (lat, lon) is strictly restricted to neighbor distance lookup — ZERO FEATURE LEAKAGE.
     """
 
-    def __init__(self, k_neighbors: int = 3, max_dist_km: float = 300.0, idw_power: float = 2.0):
+    def __init__(self, k_neighbors: int = 3, max_dist_km: float = 800.0, power: float = 2.0):
         self.k_neighbors = k_neighbors
         self.max_dist_km = max_dist_km
-        self.idw_power = idw_power
+        self.power = power
 
     def _get_k_neighbors(
         self,
-        curr_st: str,
-        curr_coord: Tuple[float, float],
-        group_stations: List[str],
+        target_station: str,
+        target_coord: Tuple[float, float],
+        active_stations: List[str],
         station_coords: Dict[str, Tuple[float, float]]
     ) -> List[Tuple[str, float]]:
         """
-        Finds k-nearest neighbors within max_dist_km. Guard clauses used to flatten loop nesting.
+        Calculates Geodesic distances to active stations and returns k nearest neighbors within max_dist_km.
         """
         distances = []
-        for other_st in group_stations:
-            if other_st == curr_st:
+        for st_id in active_stations:
+            if st_id == target_station:
                 continue
-            d = geodesic(curr_coord, station_coords[other_st]).km
-            if d <= self.max_dist_km:
-                distances.append((other_st, d))
+            coord = station_coords.get(st_id)
+            if coord:
+                dist_km = geodesic(target_coord, coord).km
+                if dist_km <= self.max_dist_km:
+                    distances.append((st_id, dist_km))
 
+        # Sort by distance ascending
         distances.sort(key=lambda x: x[1])
         return distances[:self.k_neighbors]
 
@@ -44,43 +43,59 @@ class SpatialAnomalyDetector:
         self,
         neighbors: List[Tuple[str, float]],
         station_val_map: pd.DataFrame,
-        actual_t: float,
-        actual_p: float,
-        actual_rh: float
+        target_temp: float,
+        target_press: float,
+        target_rh: float
     ) -> Tuple[float, float, float, float, str]:
         """
-        Calculates IDW expected values and spatial anomaly score for a station.
+        Computes IDW weighted average expected signals from nearest neighbors.
         """
         if not neighbors:
-            return actual_t, actual_p, actual_rh, 0.0, "No active neighbors within range"
+            return np.nan, np.nan, np.nan, 0.0, "No spatial neighbors within distance threshold"
 
-        weights = [1.0 / max(1e-2, dist ** self.idw_power) for _, dist in neighbors]
-        sum_w = sum(weights)
-        norm_weights = [w / sum_w for w in weights]
+        weights = []
+        temps = []
+        pressures = []
+        humidities = []
 
-        n_temps = [station_val_map.loc[st, 'temperature_C'] for st, _ in neighbors]
-        n_press = [station_val_map.loc[st, 'pressure_hPa'] for st, _ in neighbors]
-        n_rh = [station_val_map.loc[st, 'humidity_pct'] for st, _ in neighbors]
+        for st_id, dist in neighbors:
+            if st_id in station_val_map.index:
+                st_data = station_val_map.loc[st_id]
+                # Handle duplicated station entries if any
+                if isinstance(st_data, pd.DataFrame):
+                    st_data = st_data.iloc[0]
 
-        valid_t = [(val, w) for val, w in zip(n_temps, norm_weights) if not pd.isna(val)]
-        valid_p = [(val, w) for val, w in zip(n_press, norm_weights) if not pd.isna(val)]
-        valid_rh = [(val, w) for val, w in zip(n_rh, norm_weights) if not pd.isna(val)]
+                t_val = st_data['temperature_C']
+                p_val = st_data['pressure_hPa']
+                rh_val = st_data['humidity_pct']
 
-        exp_t = sum(v * w for v, w in valid_t) / sum(w for _, w in valid_t) if valid_t else actual_t
-        exp_p = sum(v * w for v, w in valid_p) / sum(w for _, w in valid_p) if valid_p else actual_p
-        exp_rh = sum(v * w for v, w in valid_rh) / sum(w for _, w in valid_rh) if valid_rh else actual_rh
+                if not np.isnan(t_val):
+                    w = 1.0 / max(1e-3, dist ** self.power)
+                    weights.append(w)
+                    temps.append(t_val)
+                    pressures.append(p_val if not np.isnan(p_val) else 1013.25)
+                    humidities.append(rh_val if not np.isnan(rh_val) else 50.0)
 
-        delta_t = abs(actual_t - exp_t) if not pd.isna(actual_t) else 10.0
-        delta_p = abs(actual_p - exp_p) if not pd.isna(actual_p) else 15.0
+        if not weights or sum(weights) == 0:
+            return np.nan, np.nan, np.nan, 0.0, "Neighbors present but all readings missing/NaN"
 
-        t_score = min(1.0, delta_t / 5.0)
-        p_score = min(1.0, delta_p / 8.0)
-        sp_score = max(t_score, p_score)
+        w_arr = np.array(weights)
+        w_norm = w_arr / np.sum(w_arr)
 
-        neighbor_names = [st for st, _ in neighbors]
-        detail_msg = f"Expected T: {exp_t:.1f}°C (vs Actual: {actual_t:.1f}°C, Delta={delta_t:.1f}°C) based on neighbors {neighbor_names}"
+        expected_temp = np.sum(w_norm * np.array(temps))
+        expected_press = np.sum(w_norm * np.array(pressures))
+        expected_rh = np.sum(w_norm * np.array(humidities))
 
-        return exp_t, exp_p, exp_rh, sp_score, detail_msg
+        # Spatial Disagreement Residual Score
+        if pd.isna(target_temp):
+            spatial_score = 0.85  # High disagreement if target sensor drops out completely
+        else:
+            temp_diff = abs(target_temp - expected_temp)
+            spatial_score = np.clip(temp_diff / 10.0, 0.0, 1.0)
+
+        details = f"IDW interpolated from {len(temps)} neighbors (Expected T: {expected_temp:.1f}°C vs Actual T: {target_temp if not pd.isna(target_temp) else 'NaN'}°C)"
+
+        return expected_temp, expected_press, expected_rh, float(spatial_score), details
 
     def compute_spatial_interpolations(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -88,11 +103,11 @@ class SpatialAnomalyDetector:
         """
         df = df.copy()
 
-        expected_t = np.zeros(len(df))
-        expected_p = np.zeros(len(df))
-        expected_rh = np.zeros(len(df))
-        spatial_scores = np.zeros(len(df))
-        spatial_details = [""] * len(df)
+        expected_t = pd.Series(np.nan, index=df.index)
+        expected_p = pd.Series(np.nan, index=df.index)
+        expected_rh = pd.Series(np.nan, index=df.index)
+        spatial_scores = pd.Series(0.0, index=df.index)
+        spatial_details = pd.Series("", index=df.index)
 
         stations_meta = df[['station_id', 'lat', 'lon']].drop_duplicates('station_id').set_index('station_id')
         station_coords = {st: (row['lat'], row['lon']) for st, row in stations_meta.iterrows()}
@@ -118,16 +133,19 @@ class SpatialAnomalyDetector:
                     df.loc[row_idx, 'humidity_pct']
                 )
 
-                expected_t[row_idx] = exp_t
-                expected_p[row_idx] = exp_p
-                expected_rh[row_idx] = exp_rh
-                spatial_scores[row_idx] = score
-                spatial_details[row_idx] = details
+                expected_t.loc[row_idx] = exp_t
+                expected_p.loc[row_idx] = exp_p
+                expected_rh.loc[row_idx] = exp_rh
+                spatial_scores.loc[row_idx] = score
+                spatial_details.loc[row_idx] = details
 
-        df['spatial_expected_temp'] = np.round(expected_t, 2)
-        df['spatial_expected_press'] = np.round(expected_p, 2)
-        df['spatial_expected_rh'] = np.round(expected_rh, 2)
-        df['spatial_score'] = np.round(spatial_scores, 3)
-        df['spatial_details'] = spatial_details
+        df['spatial_expected_temp'] = np.round(expected_t.values, 2)
+        df['spatial_expected_press'] = np.round(expected_p.values, 2)
+        df['spatial_expected_rh'] = np.round(expected_rh.values, 2)
+        df['spatial_score'] = np.round(spatial_scores.values, 3)
+        df['spatial_details'] = spatial_details.values
 
         return df
+
+# Alias for backward compatibility
+SpatialAnomalyDetector = SpatialFusionLayer

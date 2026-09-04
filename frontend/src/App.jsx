@@ -45,8 +45,9 @@ export default function App() {
       try {
         const timestamp = Date.now();
         const endpoint = activeDataset === 'live' ? '/api/live/telemetry' : `/api/telemetry?dataset=${activeDataset}`;
-        const primaryUrl = `http://localhost:8000${endpoint}?_t=${timestamp}`;
-        const proxyUrl = `${endpoint}?_t=${timestamp}`;
+        const sep = endpoint.includes('?') ? '&' : '?';
+        const primaryUrl = `http://localhost:8000${endpoint}${sep}_t=${timestamp}`;
+        const proxyUrl = `${endpoint}${sep}_t=${timestamp}`;
 
         let res = await fetch(primaryUrl, { cache: 'no-store' }).catch(() => null);
         if (!res || !res.ok) {

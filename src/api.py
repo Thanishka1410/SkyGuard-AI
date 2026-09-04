@@ -62,7 +62,11 @@ def get_serialized_dataset_cached(dataset_key: str) -> str:
     if dataset_key == "simulated":
         if os.path.exists(SIMULATED_DATA_PATH):
             df = loader.load_data(SIMULATED_DATA_PATH)
-            df = df.iloc[:2000].copy()
+            if 'timestamp' in df.columns:
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                df = df.sort_values('timestamp').head(3000).copy()
+            else:
+                df = df.iloc[:3000].copy()
         elif os.path.exists(SYNTHETIC_DATA_PATH):
             df = loader.load_data(SYNTHETIC_DATA_PATH)
         else:
@@ -164,10 +168,11 @@ def health_check():
 
 @app.get("/api/telemetry")
 def get_telemetry(dataset: str = Query("simulated")):
-    if dataset == "live":
+    clean_ds = str(dataset).split("?")[0].strip()
+    if clean_ds == "live":
         return get_live_telemetry()
 
-    dataset_key = "maxplanck" if dataset in ["maxplanck", "Max Planck Institute Real Weather Dataset (Unlabelled)"] else "simulated"
+    dataset_key = "maxplanck" if "maxplanck" in clean_ds.lower() or "planck" in clean_ds.lower() else "simulated"
     json_data = get_serialized_dataset_cached(dataset_key)
     return Response(
         content=json_data,
