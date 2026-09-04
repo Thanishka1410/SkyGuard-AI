@@ -107,9 +107,9 @@ def live_simulation_worker():
     Processes live ticks through 3-layer pipeline + fusion engine.
     """
     print("[SkyGuard AI Live Worker] Real-Time Live Demo Simulation Thread Started.")
-    # Initialize baseline buffer
+    # Initialize baseline buffer with 30 ticks
     initial_ticks = []
-    for _ in range(8):
+    for _ in range(30):
         initial_ticks.extend(live_simulator.tick())
     
     df_init = pd.DataFrame(initial_ticks)

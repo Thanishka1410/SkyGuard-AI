@@ -86,12 +86,12 @@ class SpatialFusionLayer:
         expected_press = np.sum(w_norm * np.array(pressures))
         expected_rh = np.sum(w_norm * np.array(humidities))
 
-        # Spatial Disagreement Residual Score
+        # Spatial Disagreement Residual Score (scaled up to 15°C for normal regional microclimate variation)
         if pd.isna(target_temp):
             spatial_score = 0.85  # High disagreement if target sensor drops out completely
         else:
             temp_diff = abs(target_temp - expected_temp)
-            spatial_score = np.clip(temp_diff / 10.0, 0.0, 1.0)
+            spatial_score = np.clip(temp_diff / 15.0, 0.0, 1.0)
 
         details = f"IDW interpolated from {len(temps)} neighbors (Expected T: {expected_temp:.1f}°C vs Actual T: {target_temp if not pd.isna(target_temp) else 'NaN'}°C)"
 
