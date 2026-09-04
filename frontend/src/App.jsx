@@ -305,7 +305,12 @@ export default function App() {
 
         {/* TAB 4: 3-Layer Decoupled Signal Evidence */}
         {activeTab === 'evidence' && (
-          <ExplainabilityTable key={`evidence-${activeDataset}-${telemetry.length}`} telemetryData={telemetry} />
+          <ExplainabilityTable
+            key={`evidence-${activeDataset}-${selectedStation}-${telemetry.length}`}
+            telemetryData={telemetry}
+            selectedStation={selectedStation}
+            setSelectedStation={setSelectedStation}
+          />
         )}
       </main>
 

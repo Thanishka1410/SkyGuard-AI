@@ -3,10 +3,24 @@ import { Layers, ShieldAlert, Cpu } from 'lucide-react';
 
 import { formatTimeString } from '../utils/formatters';
 
-export default function ExplainabilityTable({ telemetryData }) {
+export default function ExplainabilityTable({ telemetryData, selectedStation, setSelectedStation }) {
+  const [filterStation, setFilterStation] = React.useState(selectedStation || 'ALL');
+
+  React.useEffect(() => {
+    if (selectedStation) setFilterStation(selectedStation);
+  }, [selectedStation]);
+
+  const uniqueStations = Array.from(new Set((telemetryData || []).map(r => r.station_id)));
+
+  const displayData = filterStation && filterStation !== 'ALL'
+    ? (telemetryData || []).filter(r => r.station_id === filterStation)
+    : (telemetryData || []);
+
+  const sortedRows = ([...displayData]).reverse().slice(0, 25);
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-slate-800 pb-3">
         <div>
           <h2 className="text-base font-semibold text-white flex items-center gap-2">
             <Layers className="w-5 h-5 text-purple-400" />
@@ -15,6 +29,25 @@ export default function ExplainabilityTable({ telemetryData }) {
           <p className="text-xs text-slate-400 mt-0.5">
             Decoupled Physics (S_physics), Temporal ML (S_temporal), and Spatial IDW (S_spatial) score breakdown
           </p>
+        </div>
+
+        {/* Station Filter Dropdown */}
+        <div className="flex items-center space-x-2">
+          <span className="text-xs text-slate-400 shrink-0 font-medium">Filter Station:</span>
+          <select
+            value={filterStation}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFilterStation(val);
+              if (setSelectedStation && val !== 'ALL') setSelectedStation(val);
+            }}
+            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-sky-400 font-mono font-medium focus:ring-2 focus:ring-purple-500 outline-none"
+          >
+            <option value="ALL">🌐 All Stations ({uniqueStations.length})</option>
+            {uniqueStations.map(st => (
+              <option key={st} value={st}>{st}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -34,7 +67,7 @@ export default function ExplainabilityTable({ telemetryData }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
-            {([...(telemetryData || [])]).reverse().slice(0, 25).map((row, idx) => {
+            {sortedRows.map((row, idx) => {
               const isAnomaly = row.is_anomaly_pred;
               return (
                 <tr key={`${row.station_id}-${row.timestamp}-${idx}`} className={isAnomaly ? 'bg-rose-500/10 border-l-2 border-rose-500' : 'hover:bg-slate-800/40'}>
