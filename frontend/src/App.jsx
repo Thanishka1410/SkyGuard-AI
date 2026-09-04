@@ -8,6 +8,7 @@ import ExplainabilityTable from './components/ExplainabilityTable';
 import PieChartCard from './components/PieChartCard';
 import StationRankings from './components/StationRankings';
 import DemoControls from './components/DemoControls';
+import LiveSensorTicker from './components/LiveSensorTicker';
 import {
   INITIAL_STATIONS,
   INITIAL_TELEMETRY,
@@ -26,7 +27,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showDemoControls, setShowDemoControls] = useState(true);
-  const [isSimulating, setIsSimulating] = useState(false); // Default STOPPED per user request
+  const [isSimulating, setIsSimulating] = useState(true); // Default active live streaming
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Handle Dataset Switch cleanly without clearing state to 0 items
@@ -35,7 +36,7 @@ export default function App() {
     setIsLoading(true);
     setActiveDataset(newDataset);
     if (newDataset === 'live') {
-      setIsSimulating(false);
+      setIsSimulating(true);
     }
     if (newDataset === 'maxplanck') {
       setSelectedStation('AWS_MPI_JENA_01');
@@ -132,6 +133,7 @@ export default function App() {
 
   const activeTelemetry = telemetry.filter((t) => t.station_id === selectedStation);
   const anomalyAlerts = telemetry.filter((t) => t.is_anomaly_pred);
+  const latestTimestamp = telemetry.length > 0 ? telemetry[telemetry.length - 1].timestamp : '0';
 
   const metrics = {
     totalObs: telemetry.length,
@@ -184,7 +186,7 @@ export default function App() {
             </span>
             <span className="text-slate-400 font-mono text-xs">
               ({activeDataset === 'live'
-                ? (isSimulating ? 'Real-Time 1.5s Ticks' : 'Stream Paused')
+                ? (isSimulating ? 'Real-Time 1.5s Stream Ticking' : 'Stream Paused')
                 : `${telemetry.length.toLocaleString()} Processed Records`})
             </span>
           </div>
@@ -210,8 +212,18 @@ export default function App() {
           />
         )}
 
+        {/* Live Real-Time Telemetry Digital Ticker */}
+        {activeDataset === 'live' && (
+          <LiveSensorTicker
+            key={`ticker-${selectedStation}-${latestTimestamp}`}
+            telemetry={telemetry}
+            selectedStation={selectedStation}
+            isSimulating={isSimulating}
+          />
+        )}
+
         {/* Top Metric Cards */}
-        <MetricCards key={`metrics-${activeDataset}-${telemetry.length}`} metrics={metrics} />
+        <MetricCards key={`metrics-${activeDataset}-${latestTimestamp}`} metrics={metrics} />
 
         {/* Tab Selector Header */}
         <div className="border-b border-slate-800 flex space-x-2 overflow-x-auto pb-1">
@@ -236,25 +248,25 @@ export default function App() {
 
         {/* TAB 1: Network Health & Disambiguation */}
         {activeTab === 'overview' && (
-          <div key={`overview-${activeDataset}-${telemetry.length}`} className="space-y-6">
+          <div key={`overview-${activeDataset}-${latestTimestamp}`} className="space-y-6">
             <NetworkMap
-              key={`map-${activeDataset}-${stations.length}`}
+              key={`map-${activeDataset}-${latestTimestamp}`}
               stations={stations}
               selectedStation={selectedStation}
               setSelectedStation={setSelectedStation}
             />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <PieChartCard key={`pie-${activeDataset}-${telemetry.length}`} telemetry={telemetry} />
-              <StationRankings key={`rank-${activeDataset}-${stations.length}`} stations={stations} />
+              <PieChartCard key={`pie-${activeDataset}-${latestTimestamp}`} telemetry={telemetry} />
+              <StationRankings key={`rank-${activeDataset}-${latestTimestamp}`} stations={stations} />
             </div>
           </div>
         )}
 
         {/* TAB 2: Self-Healing Telemetry Imputation */}
         {activeTab === 'selfhealing' && (
-          <div key={`healing-${activeDataset}-${selectedStation}-${activeTelemetry.length}`} className="space-y-6">
+          <div key={`healing-${activeDataset}-${selectedStation}-${latestTimestamp}`} className="space-y-6">
             <TelemetryChart
-              key={`chart-${activeDataset}-${selectedStation}-${activeTelemetry.length}`}
+              key={`chart-${activeDataset}-${selectedStation}-${latestTimestamp}`}
               telemetryData={activeTelemetry.length > 0 ? activeTelemetry : telemetry}
               selectedStation={selectedStation}
             />
@@ -293,12 +305,12 @@ export default function App() {
 
         {/* TAB 3: Live Alert Feed & Root Causes */}
         {activeTab === 'alerts' && (
-          <div key={`alerts-${activeDataset}-${anomalyAlerts.length}`} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div key={`alerts-${activeDataset}-${latestTimestamp}`} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <AlertFeed key={`alertfeed-${activeDataset}-${anomalyAlerts.length}`} alerts={anomalyAlerts} />
+              <AlertFeed key={`alertfeed-${activeDataset}-${latestTimestamp}`} alerts={anomalyAlerts} />
             </div>
             <div className="lg:col-span-1">
-              <PieChartCard key={`alertpie-${activeDataset}-${telemetry.length}`} telemetry={telemetry} />
+              <PieChartCard key={`alertpie-${activeDataset}-${latestTimestamp}`} telemetry={telemetry} />
             </div>
           </div>
         )}
@@ -306,7 +318,7 @@ export default function App() {
         {/* TAB 4: 3-Layer Decoupled Signal Evidence */}
         {activeTab === 'evidence' && (
           <ExplainabilityTable
-            key={`evidence-${activeDataset}-${selectedStation}-${telemetry.length}`}
+            key={`evidence-${activeDataset}-${selectedStation}-${latestTimestamp}`}
             telemetryData={telemetry}
             selectedStation={selectedStation}
             setSelectedStation={setSelectedStation}
