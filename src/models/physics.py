@@ -17,7 +17,7 @@ class PhysicsAnomalyDetector:
         max_press: float = 1100.0,
         max_temp_grad_15m: float = 10.0,
         max_press_grad_15m: float = 15.0,
-        frozen_window: int = 8
+        frozen_window: int = 3
     ):
         self.min_temp = min_temp
         self.max_temp = max_temp
@@ -103,10 +103,11 @@ class PhysicsAnomalyDetector:
             self.calculate_dew_point(t, r) for t, r in zip(df['temperature_C'], df['humidity_pct'])
         ]
 
-        physics_scores = []
-        physics_violations_list = []
+        physics_scores = pd.Series(0.0, index=df.index)
+        physics_violations_list = pd.Series("OK", index=df.index, dtype=object)
 
         for station_id, group in df.groupby('station_id'):
+            idx = group.index
             group_temps = group['temperature_C'].values
             group_press = group['pressure_hPa'].values
             group_rh = group['humidity_pct'].values
@@ -130,8 +131,8 @@ class PhysicsAnomalyDetector:
                     prev_press=prev_p,
                     temp_history=history_t
                 )
-                physics_scores.append(score)
-                physics_violations_list.append("; ".join(viols) if viols else "OK")
+                physics_scores.loc[idx[i]] = score
+                physics_violations_list.loc[idx[i]] = "; ".join(viols) if viols else "OK"
 
         df['physics_score'] = physics_scores
         df['physics_violations'] = physics_violations_list

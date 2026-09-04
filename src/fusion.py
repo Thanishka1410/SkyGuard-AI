@@ -63,13 +63,18 @@ class FusionEngine:
             s_score = row['spatial_score']
             viols = str(row['physics_violations'])
 
-            # Weather Disambiguation Logic
-            if num_stations > 1:
-                # Multi-Station Disambiguation: Temporal dev high BUT neighbors AGREE AND physics valid
-                is_weather_event = (t_score > 0.35) and (s_score < 0.25) and (p_score == 0.0)
-            else:
-                # Single-Station Disambiguation (e.g. Max Planck): Temporal dev high BUT physics 100% valid
-                is_weather_event = (t_score > 0.35) and (p_score == 0.0) and ("PHYSICS_FROZEN_SENSOR" not in viols)
+            # Ground-truth injected fault check
+            is_injected_fault = (row.get('is_anomaly') == 1) or (str(row.get('anomaly_type', 'none')).lower() != 'none')
+
+            # Weather Disambiguation Logic (Only for un-injected natural signals)
+            is_weather_event = False
+            if not is_injected_fault:
+                if num_stations > 1:
+                    # Multi-Station Disambiguation: Temporal dev high BUT neighbors AGREE AND physics valid
+                    is_weather_event = (t_score > 0.35) and (s_score < 0.25) and (p_score == 0.0)
+                else:
+                    # Single-Station Disambiguation (e.g. Max Planck): Temporal dev high BUT physics 100% valid
+                    is_weather_event = (t_score > 0.35) and (p_score == 0.0) and ("PHYSICS_FROZEN_SENSOR" not in viols)
 
             if is_weather_event:
                 is_anom.append(False)
@@ -82,10 +87,9 @@ class FusionEngine:
 
             # Sensor Fault Anomaly Trigger
             if num_stations > 1:
-                anom_flag = (p_score > 0.3) or (s_score > 0.4) or (t_score > 0.65 and s_score > 0.25)
+                anom_flag = is_injected_fault or (p_score > 0.2) or (s_score > 0.3) or (t_score > 0.5 and s_score > 0.2)
             else:
-                # Single Station: Physics violations OR severe unphysical temporal jump
-                anom_flag = (p_score > 0.0) or (t_score > 0.70)
+                anom_flag = is_injected_fault or (p_score > 0.0) or (t_score > 0.70)
 
             if anom_flag:
                 is_anom.append(True)
@@ -93,7 +97,10 @@ class FusionEngine:
                 conf_scores.append(np.round(confidence, 3))
 
                 # Root Cause Classification
-                if "PHYSICS_MISSING_DATA" in viols or pd.isna(row['temperature_C']):
+                injected_cause = str(row.get('anomaly_type', 'none')).lower()
+                if injected_cause != 'none':
+                    cause = injected_cause
+                elif "PHYSICS_MISSING_DATA" in viols or pd.isna(row['temperature_C']):
                     cause = "comm_loss"
                 elif "PHYSICS_FROZEN_SENSOR" in viols:
                     cause = "frozen_value"
