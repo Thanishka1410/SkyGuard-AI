@@ -101,16 +101,20 @@ def get_serialized_dataset_cached(dataset_key: str) -> str:
     return json_bytes
 
 
+from collections import deque
+
 def live_simulation_worker():
     """
     Background worker thread running LiveSimulator.tick() every 1.5 seconds.
-    Processes live ticks through 3-layer pipeline + fusion engine.
+    Processes live ticks through 3-layer pipeline + fusion engine using a rolling window of raw telemetry.
     """
     print("[SkyGuard AI Live Worker] Real-Time Live Demo Simulation Thread Started.")
     # Initialize baseline buffer with 30 ticks
     initial_ticks = []
     for _ in range(30):
         initial_ticks.extend(live_simulator.tick())
+
+    raw_live_ticks = deque(initial_ticks, maxlen=300)  # ~50 ticks of raw history (6 stations * 50 = 300 records)
     
     df_init = pd.DataFrame(initial_ticks)
     proc_init = engine.process_pipeline(df_init, train_baseline=True)
@@ -124,13 +128,18 @@ def live_simulation_worker():
         try:
             time.sleep(1.5)
             new_tick = live_simulator.tick()
-            tick_df = pd.DataFrame(new_tick)
+            raw_live_ticks.extend(new_tick)
 
-            # Pass tick through 3-layer fusion engine
-            processed_tick = engine.process_pipeline(tick_df, train_baseline=False)
-            explained_tick = explainer.add_explanations_to_dataframe(processed_tick)
+            # Pass rolling raw window through 3-layer fusion engine
+            raw_window_df = pd.DataFrame(list(raw_live_ticks))
+            processed_window = engine.process_pipeline(raw_window_df, train_baseline=False)
+            explained_window = explainer.add_explanations_to_dataframe(processed_window)
 
-            records = explained_tick.to_dict(orient='records')
+            # Extract latest processed timestamp records
+            latest_ts = explained_window['timestamp'].max()
+            latest_df = explained_window[explained_window['timestamp'] == latest_ts]
+
+            records = latest_df.to_dict(orient='records')
             for r in records:
                 if isinstance(r.get('timestamp'), (pd.Timestamp, np.datetime64)):
                     r['timestamp'] = str(r['timestamp'])

@@ -43,25 +43,31 @@ class SpatialFusionLayer:
         self,
         neighbors: List[Tuple[str, float]],
         station_val_map: pd.DataFrame,
+        st_medians: pd.DataFrame,
+        target_station: str,
         target_temp: float,
         target_press: float,
         target_rh: float
     ) -> Tuple[float, float, float, float, str]:
         """
-        Computes IDW weighted average expected signals from nearest neighbors.
+        Computes IDW weighted average expected signals from nearest neighbors using baseline offsets.
         """
         if not neighbors:
             return np.nan, np.nan, np.nan, 0.0, "No spatial neighbors within distance threshold"
 
+        # Target station baselines
+        b_t_target = st_medians.loc[target_station, 'temperature_C'] if (target_station in st_medians.index and not pd.isna(st_medians.loc[target_station, 'temperature_C'])) else 25.0
+        b_p_target = st_medians.loc[target_station, 'pressure_hPa'] if (target_station in st_medians.index and not pd.isna(st_medians.loc[target_station, 'pressure_hPa'])) else 1013.25
+        b_rh_target = st_medians.loc[target_station, 'humidity_pct'] if (target_station in st_medians.index and not pd.isna(st_medians.loc[target_station, 'humidity_pct'])) else 50.0
+
         weights = []
-        temps = []
-        pressures = []
-        humidities = []
+        diffs_temp = []
+        diffs_press = []
+        diffs_rh = []
 
         for st_id, dist in neighbors:
             if st_id in station_val_map.index:
                 st_data = station_val_map.loc[st_id]
-                # Handle duplicated station entries if any
                 if isinstance(st_data, pd.DataFrame):
                     st_data = st_data.iloc[0]
 
@@ -69,12 +75,16 @@ class SpatialFusionLayer:
                 p_val = st_data['pressure_hPa']
                 rh_val = st_data['humidity_pct']
 
+                b_t_neigh = st_medians.loc[st_id, 'temperature_C'] if (st_id in st_medians.index and not pd.isna(st_medians.loc[st_id, 'temperature_C'])) else 25.0
+                b_p_neigh = st_medians.loc[st_id, 'pressure_hPa'] if (st_id in st_medians.index and not pd.isna(st_medians.loc[st_id, 'pressure_hPa'])) else 1013.25
+                b_rh_neigh = st_medians.loc[st_id, 'humidity_pct'] if (st_id in st_medians.index and not pd.isna(st_medians.loc[st_id, 'humidity_pct'])) else 50.0
+
                 if not np.isnan(t_val):
                     w = 1.0 / max(1e-3, dist ** self.power)
                     weights.append(w)
-                    temps.append(t_val)
-                    pressures.append(p_val if not np.isnan(p_val) else 1013.25)
-                    humidities.append(rh_val if not np.isnan(rh_val) else 50.0)
+                    diffs_temp.append(t_val - b_t_neigh)
+                    diffs_press.append((p_val if not np.isnan(p_val) else b_p_neigh) - b_p_neigh)
+                    diffs_rh.append((rh_val if not np.isnan(rh_val) else b_rh_neigh) - b_rh_neigh)
 
         if not weights or sum(weights) == 0:
             return np.nan, np.nan, np.nan, 0.0, "Neighbors present but all readings missing/NaN"
@@ -82,18 +92,18 @@ class SpatialFusionLayer:
         w_arr = np.array(weights)
         w_norm = w_arr / np.sum(w_arr)
 
-        expected_temp = np.sum(w_norm * np.array(temps))
-        expected_press = np.sum(w_norm * np.array(pressures))
-        expected_rh = np.sum(w_norm * np.array(humidities))
+        expected_temp = b_t_target + np.sum(w_norm * np.array(diffs_temp))
+        expected_press = b_p_target + np.sum(w_norm * np.array(diffs_press))
+        expected_rh = b_rh_target + np.sum(w_norm * np.array(diffs_rh))
 
-        # Spatial Disagreement Residual Score (scaled up to 15°C for normal regional microclimate variation)
+        # Spatial Disagreement Residual Score (scaled up to 8.0°C deviation threshold for baseline-adjusted spatial anomaly)
         if pd.isna(target_temp):
             spatial_score = 0.85  # High disagreement if target sensor drops out completely
         else:
             temp_diff = abs(target_temp - expected_temp)
-            spatial_score = np.clip(temp_diff / 15.0, 0.0, 1.0)
+            spatial_score = np.clip(temp_diff / 8.0, 0.0, 1.0)
 
-        details = f"IDW interpolated from {len(temps)} neighbors (Expected T: {expected_temp:.1f}°C vs Actual T: {target_temp if not pd.isna(target_temp) else 'NaN'}°C)"
+        details = f"IDW baseline-adjusted from {len(diffs_temp)} neighbors (Expected T: {expected_temp:.1f}°C vs Actual T: {target_temp if not pd.isna(target_temp) else 'NaN'}°C)"
 
         return expected_temp, expected_press, expected_rh, float(spatial_score), details
 
@@ -112,6 +122,9 @@ class SpatialFusionLayer:
         stations_meta = df[['station_id', 'lat', 'lon']].drop_duplicates('station_id').set_index('station_id')
         station_coords = {st: (row['lat'], row['lon']) for st, row in stations_meta.iterrows()}
 
+        # Compute per-station median baselines across input telemetry dataframe
+        st_medians = df.groupby('station_id')[['temperature_C', 'pressure_hPa', 'humidity_pct']].median()
+
         for ts, group in df.groupby('timestamp'):
             group_stations = group['station_id'].tolist()
             if len(group_stations) <= 1:
@@ -128,6 +141,8 @@ class SpatialFusionLayer:
                 exp_t, exp_p, exp_rh, score, details = self._calculate_idw_estimates(
                     neighbors,
                     station_val_map,
+                    st_medians,
+                    curr_st,
                     df.loc[row_idx, 'temperature_C'],
                     df.loc[row_idx, 'pressure_hPa'],
                     df.loc[row_idx, 'humidity_pct']
