@@ -1,11 +1,18 @@
 import React from 'react';
 import { Activity, AlertTriangle, ShieldCheck, HeartPulse, Radio } from 'lucide-react';
 
-export default function MetricCards({ metrics }) {
+export default function MetricCards({ metrics = {} }) {
+  const totalObs = typeof metrics.totalObs === 'number' ? metrics.totalObs.toLocaleString() : '0';
+  const anomCount = typeof metrics.anomCount === 'number' ? metrics.anomCount.toLocaleString() : '0';
+  const weatherEvents = typeof metrics.weatherEvents === 'number' ? metrics.weatherEvents.toLocaleString() : '0';
+  const anomRate = metrics.anomRate !== undefined && metrics.anomRate !== null ? metrics.anomRate : '0.0';
+  const avgHealth = metrics.avgHealth !== undefined && metrics.avgHealth !== null ? metrics.avgHealth : '100.0';
+  const activeStations = typeof metrics.activeStations === 'number' ? metrics.activeStations : 0;
+
   const cards = [
     {
       title: 'Total Telemetry Rows',
-      value: metrics.totalObs ? metrics.totalObs.toLocaleString() : '2,016',
+      value: totalObs,
       subtitle: 'Processed Observations',
       icon: Activity,
       color: 'text-sky-400',
@@ -13,15 +20,15 @@ export default function MetricCards({ metrics }) {
     },
     {
       title: 'Sensor Fault Anomalies',
-      value: metrics.anomCount ? metrics.anomCount.toLocaleString() : '803',
-      subtitle: `${metrics.anomRate || '39.8'}% anomaly rate`,
+      value: anomCount,
+      subtitle: `${anomRate}% anomaly rate`,
       icon: AlertTriangle,
       color: 'text-rose-400',
       bg: 'bg-rose-500/10 border-rose-500/20'
     },
     {
       title: 'Real Weather Events Saved',
-      value: metrics.weatherEvents ? metrics.weatherEvents.toLocaleString() : '433',
+      value: weatherEvents,
       subtitle: 'Spatial Disambiguated',
       icon: ShieldCheck,
       color: 'text-emerald-400',
@@ -29,7 +36,7 @@ export default function MetricCards({ metrics }) {
     },
     {
       title: 'Network Health Index',
-      value: `${metrics.avgHealth || '60.2'}%`,
+      value: `${avgHealth}%`,
       subtitle: 'Self-Correcting Target',
       icon: HeartPulse,
       color: 'text-purple-400',
@@ -37,7 +44,7 @@ export default function MetricCards({ metrics }) {
     },
     {
       title: 'Active AWS Stations',
-      value: metrics.activeStations || '7',
+      value: activeStations,
       subtitle: 'Multi-Region Network',
       icon: Radio,
       color: 'text-amber-400',

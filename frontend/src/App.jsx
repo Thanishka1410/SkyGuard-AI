@@ -16,7 +16,7 @@ export default function App() {
   const [selectedStation, setSelectedStation] = useState('AWS_DELHI_01');
   const [stations, setStations] = useState(INITIAL_STATIONS);
   const [telemetry, setTelemetry] = useState(INITIAL_TELEMETRY);
-  const [liveStatus, setLiveStatus] = useState('SkyGuard Core Online');
+  const [liveStatus, setLiveStatus] = useState('⚡ Live Demo Stream Active');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showDemoControls, setShowDemoControls] = useState(true);
@@ -29,10 +29,10 @@ export default function App() {
     setStations([]);
     setTelemetry([]);
     setActiveDataset(newDataset);
-    if (newDataset === 'simulated' || newDataset === 'live') {
-      setSelectedStation('AWS_DELHI_01');
-    } else {
+    if (newDataset === 'maxplanck') {
       setSelectedStation('AWS_MPI_JENA_01');
+    } else {
+      setSelectedStation('AWS_DELHI_01');
     }
   };
 
@@ -67,8 +67,10 @@ export default function App() {
           }
           if (activeDataset === 'live') {
             setLiveStatus(isSimulating ? '⚡ Live Demo Stream Active' : '⏸️ Live Stream Paused');
+          } else if (activeDataset === 'simulated') {
+            setLiveStatus('📊 30-Day Batch Network');
           } else {
-            setLiveStatus('Live FastAPI Connected');
+            setLiveStatus('🌍 Max Planck Weather Data');
           }
         } else if (isMounted && telemetry.length === 0) {
           setStations(INITIAL_STATIONS);
@@ -108,7 +110,7 @@ export default function App() {
     anomCount: anomalyAlerts.length,
     weatherEvents: telemetry.filter((t) => t.root_cause === 'real_weather_event').length,
     anomRate: telemetry.length > 0 ? ((anomalyAlerts.length / telemetry.length) * 100).toFixed(1) : '0.0',
-    avgHealth: (stations.reduce((acc, s) => acc + s.station_health_pct, 0) / (stations.length || 1)).toFixed(1),
+    avgHealth: stations.length > 0 ? (stations.reduce((acc, s) => acc + (s.station_health_pct || 0), 0) / stations.length).toFixed(1) : '100.0',
     activeStations: stations.length
   };
 
@@ -134,29 +136,43 @@ export default function App() {
           <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center rounded-xl">
             <div className="flex items-center space-x-3 bg-slate-900 border border-slate-800 px-6 py-4 rounded-xl shadow-2xl">
               <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-sm font-semibold text-slate-200">Loading {activeDataset === 'live' ? 'Live Demo Stream' : activeDataset === 'simulated' ? 'Simulated India AWS Network' : 'Max Planck Dataset'}...</span>
+              <span className="text-sm font-semibold text-slate-200">
+                Loading {activeDataset === 'live' ? 'Live Demo Stream' : activeDataset === 'simulated' ? 'Simulated India AWS Network' : 'Max Planck Dataset'}...
+              </span>
             </div>
           </div>
         )}
 
-        {/* Demo Controls Header Toggle */}
-        <div className="flex items-center justify-between bg-slate-900/80 border border-purple-500/30 rounded-xl px-4 py-2 text-xs">
-          <div className="flex items-center space-x-2">
-            <span className={`w-2 h-2 rounded-full ${isSimulating ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`}></span>
-            <span className="font-semibold text-purple-300">Live Demo Mode Active</span>
-            <span className="text-slate-400">({activeDataset === 'live' ? (isSimulating ? '🟢 Live Streaming (1.5s ticks)' : '⏸️ Stream Paused') : 'Batch Data View'})</span>
+        {/* Dataset Status & Controls Header Banner */}
+        <div className="flex items-center justify-between bg-slate-900/80 border border-purple-500/30 rounded-xl px-4 py-2.5 text-xs">
+          <div className="flex items-center space-x-2.5">
+            <span className={`w-2.5 h-2.5 rounded-full ${activeDataset === 'live' ? (isSimulating ? 'bg-emerald-400 animate-ping' : 'bg-amber-400') : 'bg-sky-400'}`}></span>
+            <span className="font-bold text-purple-300 text-sm">
+              {activeDataset === 'live'
+                ? '⚡ Live Demo Stream Active'
+                : activeDataset === 'simulated'
+                ? '📊 Simulated India AWS Network (30-Day Batch)'
+                : '🌍 Max Planck Institute Real Weather Dataset'}
+            </span>
+            <span className="text-slate-400 font-mono text-xs">
+              ({activeDataset === 'live'
+                ? (isSimulating ? 'Real-Time 1.5s Ticks' : 'Stream Paused')
+                : `${telemetry.length.toLocaleString()} Processed Records`})
+            </span>
           </div>
-          <button
-            onClick={() => setShowDemoControls(!showDemoControls)}
-            className="flex items-center space-x-1.5 px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-lg text-purple-300 transition-colors font-medium"
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>{showDemoControls ? 'Hide Fault Controls' : 'Show Fault Controls'}</span>
-          </button>
+          {activeDataset === 'live' && (
+            <button
+              onClick={() => setShowDemoControls(!showDemoControls)}
+              className="flex items-center space-x-1.5 px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-lg text-purple-300 transition-colors font-medium"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>{showDemoControls ? 'Hide Fault Controls' : 'Show Fault Controls'}</span>
+            </button>
+          )}
         </div>
 
-        {/* Demo Fault Injection Panel */}
-        {showDemoControls && (
+        {/* Demo Fault Injection Panel (Only shown in Live Mode) */}
+        {activeDataset === 'live' && showDemoControls && (
           <DemoControls
             isSimulating={isSimulating}
             setIsSimulating={setIsSimulating}
