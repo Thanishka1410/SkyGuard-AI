@@ -32,6 +32,9 @@ export default function App() {
     if (newDataset === activeDataset) return;
     setIsLoading(true);
     setActiveDataset(newDataset);
+    if (newDataset === 'live') {
+      setIsSimulating(true);
+    }
     if (newDataset === 'maxplanck') {
       setSelectedStation('AWS_MPI_JENA_01');
     } else {
@@ -194,11 +197,13 @@ export default function App() {
           )}
         </div>
 
-        {/* Demo Fault Injection Panel (Only shown in Live Mode) */}
-        {activeDataset === 'live' && showDemoControls && (
+        {/* Demo Fault Injection Panel */}
+        {showDemoControls && (
           <DemoControls
             isSimulating={isSimulating}
             setIsSimulating={setIsSimulating}
+            setActiveDataset={handleDatasetChange}
+            setSelectedStation={setSelectedStation}
             onInjectSuccess={() => {}}
           />
         )}

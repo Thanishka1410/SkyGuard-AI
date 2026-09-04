@@ -10,8 +10,14 @@ const STATIONS = [
   { id: 'AWS_JAISALMER_01', label: 'AWS_JAISALMER_01 (Desert)' }
 ];
 
-export default function DemoControls({ isSimulating, setIsSimulating, onInjectSuccess }) {
-  const [selectedStation, setSelectedStation] = useState('AWS_DELHI_01');
+export default function DemoControls({
+  isSimulating,
+  setIsSimulating,
+  setActiveDataset,
+  setSelectedStation,
+  onInjectSuccess
+}) {
+  const [targetStation, setTargetStation] = useState('AWS_DELHI_01');
   const [durationTicks, setDurationTicks] = useState(10);
   const [activeStatus, setActiveStatus] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,8 +25,14 @@ export default function DemoControls({ isSimulating, setIsSimulating, onInjectSu
   const handleInject = async (anomalyType, label) => {
     setIsSubmitting(true);
     setActiveStatus(null);
+
+    // Automatically ensure active dataset is live stream and selected station matches target
+    if (setActiveDataset) setActiveDataset('live');
+    if (setSelectedStation) setSelectedStation(targetStation);
+    if (!isSimulating && setIsSimulating) setIsSimulating(true);
+
     const payload = {
-      station_id: selectedStation,
+      station_id: targetStation,
       anomaly_type: anomalyType,
       duration_ticks: durationTicks
     };
@@ -42,15 +54,11 @@ export default function DemoControls({ isSimulating, setIsSimulating, onInjectSu
 
       if (res && res.ok) {
         const data = await res.json();
-        // Ensure simulation is running when injecting
-        if (!isSimulating) {
-          setIsSimulating(true);
-        }
         setActiveStatus({
           type: 'success',
-          msg: `Injected '${label}' on ${selectedStation} for ${durationTicks} ticks! Streaming live detections...`
+          msg: `Injected '${label}' on ${targetStation} for ${durationTicks} ticks! Streaming live detections...`
         });
-        if (onInjectSuccess) onInjectSuccess();
+        if (onInjectSuccess) onInjectSuccess(targetStation);
       } else {
         setActiveStatus({ type: 'error', msg: 'Injection failed. Backend offline or endpoint error.' });
       }
@@ -111,8 +119,11 @@ export default function DemoControls({ isSimulating, setIsSimulating, onInjectSu
         <div>
           <label className="block text-xs font-medium text-slate-300 mb-1">Select Target AWS Station</label>
           <select
-            value={selectedStation}
-            onChange={(e) => setSelectedStation(e.target.value)}
+            value={targetStation}
+            onChange={(e) => {
+              setTargetStation(e.target.value);
+              if (setSelectedStation) setSelectedStation(e.target.value);
+            }}
             className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:ring-2 focus:ring-purple-500 outline-none"
           >
             {STATIONS.map((st) => (
