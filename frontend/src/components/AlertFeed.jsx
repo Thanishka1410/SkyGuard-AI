@@ -20,25 +20,35 @@ export default function AlertFeed({ alerts }) {
     }
   };
 
+export default function AlertFeed({ alerts = [], telemetry = [] }) {
+  const displayItems = (alerts && alerts.length > 0)
+    ? ([...alerts]).reverse().slice(0, 25)
+    : ([...(telemetry || [])]).reverse().slice(0, 20);
+
+  const isShowingAnomalies = alerts && alerts.length > 0;
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-white flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-rose-400" />
-          Real-Time Anomaly Alert Feed
+          <AlertCircle className={`w-5 h-5 ${isShowingAnomalies ? 'text-rose-400' : 'text-emerald-400'}`} />
+          {isShowingAnomalies ? 'Real-Time Anomaly Alert Feed' : 'Live Telemetry Event & Verification Feed'}
         </h2>
-        <span className="text-xs text-slate-400">{alerts.length} Flagged Alerts</span>
+        <span className="text-xs text-slate-400 font-mono">
+          {isShowingAnomalies ? `${alerts.length} Active Fault Alerts` : 'Live Stream Validating (1.5s Ticks)'}
+        </span>
       </div>
 
       {/* Alert Feed Container */}
       <div className="space-y-3 overflow-y-auto max-h-[380px] pr-1">
-        {alerts.length === 0 ? (
-          <div className="text-center py-8 text-slate-500 text-sm">No active anomaly alerts detected</div>
-        ) : (
-          ([...(alerts || [])]).reverse().slice(0, 25).map((alert, idx) => (
+        {displayItems.map((alert, idx) => {
+          const isAnom = alert.is_anomaly_pred;
+          return (
             <div
-              key={idx}
-              className="p-3.5 rounded-lg bg-slate-950 border border-slate-800/80 hover:border-slate-700 transition-all text-xs"
+              key={`${alert.station_id}-${alert.timestamp}-${idx}`}
+              className={`p-3.5 rounded-lg bg-slate-950 border transition-all text-xs ${
+                isAnom ? 'border-rose-500/50 bg-rose-950/20' : 'border-slate-800/80 hover:border-slate-700'
+              }`}
             >
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center space-x-2">
@@ -52,15 +62,15 @@ export default function AlertFeed({ alerts }) {
 
               <p className="text-slate-300 mt-1 leading-relaxed">{alert.explanation}</p>
 
-              {alert.spatial_expected_temp && (
+              {alert.spatial_expected_temp != null && isAnom && (
                 <div className="mt-2 text-[11px] text-emerald-400 flex items-center gap-1.5 bg-emerald-500/5 px-2.5 py-1 rounded border border-emerald-500/10">
                   <Zap className="w-3 h-3" />
                   <span>Self-Healing Imputation: {alert.temperature_C}°C &rarr; {alert.spatial_expected_temp}°C</span>
                 </div>
               )}
             </div>
-          ))
-        )}
+          );
+        })}
       </div>
     </div>
   );

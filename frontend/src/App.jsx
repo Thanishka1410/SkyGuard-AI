@@ -270,9 +270,15 @@ export default function App() {
               telemetryData={activeTelemetry.length > 0 ? activeTelemetry : telemetry}
               selectedStation={selectedStation}
             />
-            {/* Raw vs Imputed Table for Anomalies */}
+            {/* Live Telemetry & Self-Healing Imputation Log (All Streamed Ticks) */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-              <h3 className="text-sm font-semibold text-white mb-3">Raw vs Self-Healing Imputed Table (Anomalies Only)</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-emerald-400" />
+                  Live Telemetry & Self-Healing Imputation Log (Streamed Ticks)
+                </h3>
+                <span className="text-xs text-slate-400 font-mono">Updating Live (1.5s Ticks)</span>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-300">
                   <thead className="bg-slate-950 text-slate-400 font-medium uppercase border-b border-slate-800">
@@ -282,20 +288,27 @@ export default function App() {
                       <th className="px-3 py-2">Raw Temp</th>
                       <th className="px-3 py-2">Spatial Expected</th>
                       <th className="px-3 py-2">Self-Healing Imputed</th>
-                      <th className="px-3 py-2">Root Cause</th>
+                      <th className="px-3 py-2">Status / Root Cause</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
-                    {([...(anomalyAlerts || [])]).reverse().slice(0, 15).map((row, idx) => (
-                      <tr key={`${row.station_id}-${row.timestamp}-${idx}`} className="hover:bg-slate-800/40">
-                        <td className="px-3 py-2 font-mono text-slate-400">{formatTimeString(row.timestamp)}</td>
-                        <td className="px-3 py-2 font-mono text-sky-400">{row.station_id}</td>
-                        <td className="px-3 py-2 font-medium text-rose-400">{row.temperature_C != null ? `${row.temperature_C}°C` : 'NaN'}</td>
-                        <td className="px-3 py-2 text-slate-300">{row.spatial_expected_temp != null ? `${row.spatial_expected_temp}°C` : 'N/A'}</td>
-                        <td className="px-3 py-2 text-emerald-400 font-semibold">{row.corrected_temp_C != null ? `${row.corrected_temp_C}°C` : 'N/A'}</td>
-                        <td className="px-3 py-2 font-semibold uppercase text-rose-400">{row.root_cause}</td>
-                      </tr>
-                    ))}
+                    {([...(telemetry || [])]).reverse().slice(0, 15).map((row, idx) => {
+                      const isAnom = row.is_anomaly_pred;
+                      return (
+                        <tr key={`${row.station_id}-${row.timestamp}-${idx}`} className={isAnom ? 'bg-rose-500/10 border-l-2 border-rose-500' : 'hover:bg-slate-800/40'}>
+                          <td className="px-3 py-2 font-mono text-slate-400">{formatTimeString(row.timestamp)}</td>
+                          <td className="px-3 py-2 font-mono text-sky-400 font-medium">{row.station_id}</td>
+                          <td className={`px-3 py-2 font-medium ${isAnom ? 'text-rose-400' : 'text-white'}`}>{row.temperature_C != null ? `${row.temperature_C}°C` : 'NaN'}</td>
+                          <td className="px-3 py-2 text-slate-300">{row.spatial_expected_temp != null ? `${row.spatial_expected_temp}°C` : 'N/A'}</td>
+                          <td className="px-3 py-2 text-emerald-400 font-semibold">{row.corrected_temp_C != null ? `${row.corrected_temp_C}°C` : 'N/A'}</td>
+                          <td className="px-3 py-2 font-semibold uppercase text-xs">
+                            <span className={isAnom ? 'text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded border border-rose-500/30' : 'text-emerald-400'}>
+                              {isAnom ? row.root_cause : 'NORMAL (VALID)'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -307,7 +320,7 @@ export default function App() {
         {activeTab === 'alerts' && (
           <div key={`alerts-${activeDataset}-${latestTimestamp}`} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <AlertFeed key={`alertfeed-${activeDataset}-${latestTimestamp}`} alerts={anomalyAlerts} />
+              <AlertFeed key={`alertfeed-${activeDataset}-${latestTimestamp}`} alerts={anomalyAlerts} telemetry={telemetry} />
             </div>
             <div className="lg:col-span-1">
               <PieChartCard key={`alertpie-${activeDataset}-${latestTimestamp}`} telemetry={telemetry} />
