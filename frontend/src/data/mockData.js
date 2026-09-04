@@ -52,3 +52,31 @@ export const INITIAL_TELEMETRY = Array.from({ length: 48 }, (_, i) => {
     explanation: explanation
   };
 });
+
+// Mock fallback for Max Planck Single-Station Dataset
+export const MPI_JENA_INITIAL_STATIONS = [
+  { station_id: 'AWS_MPI_JENA_01', region: 'Central Europe', lat: 50.9271, lon: 11.5892, station_health_pct: 100.0 }
+];
+
+export const MPI_JENA_INITIAL_TELEMETRY = Array.from({ length: 48 }, (_, i) => {
+  const date = new Date(Date.now() - (47 - i) * 10 * 60 * 1000);
+  const hour = date.getHours();
+  const diurnal = Math.sin((hour - 8) * (2 * Math.PI / 24));
+  const rawTemp = -2.0 + 5 * diurnal + (Math.random() * 0.4 - 0.2);
+
+  return {
+    timestamp: date.toISOString(),
+    station_id: 'AWS_MPI_JENA_01',
+    temperature_C: Number(rawTemp.toFixed(2)),
+    pressure_hPa: 996.5,
+    humidity_pct: 85.0,
+    spatial_expected_temp: Number(rawTemp.toFixed(2)),
+    corrected_temp_C: Number(rawTemp.toFixed(2)),
+    physics_score: 0.0,
+    temporal_score: 0.05,
+    spatial_score: 0.0,
+    is_anomaly_pred: false,
+    root_cause: 'normal',
+    explanation: '[AWS_MPI_JENA_01] NORMAL: Single-station thermodynamic consistency verified via multivariate physics law.'
+  };
+});

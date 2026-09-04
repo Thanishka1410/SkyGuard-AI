@@ -8,7 +8,12 @@ import ExplainabilityTable from './components/ExplainabilityTable';
 import PieChartCard from './components/PieChartCard';
 import StationRankings from './components/StationRankings';
 import DemoControls from './components/DemoControls';
-import { INITIAL_STATIONS, INITIAL_TELEMETRY } from './data/mockData';
+import {
+  INITIAL_STATIONS,
+  INITIAL_TELEMETRY,
+  MPI_JENA_INITIAL_STATIONS,
+  MPI_JENA_INITIAL_TELEMETRY
+} from './data/mockData';
 import { Map, Cpu, AlertTriangle, Layers, Sliders } from 'lucide-react';
 
 export default function App() {
@@ -22,12 +27,10 @@ export default function App() {
   const [showDemoControls, setShowDemoControls] = useState(true);
   const [isSimulating, setIsSimulating] = useState(true);
 
-  // Handle Dataset Switch with clean state reset
+  // Handle Dataset Switch cleanly without clearing state to 0 items
   const handleDatasetChange = (newDataset) => {
     if (newDataset === activeDataset) return;
     setIsLoading(true);
-    setStations([]);
-    setTelemetry([]);
     setActiveDataset(newDataset);
     if (newDataset === 'maxplanck') {
       setSelectedStation('AWS_MPI_JENA_01');
@@ -58,7 +61,9 @@ export default function App() {
           const data = await res.json();
           if (data.stations && data.stations.length > 0) {
             setStations(data.stations);
-            if (!data.stations.some(s => s.station_id === selectedStation)) {
+            // Ensure selected station matches active dataset stations
+            const stationExists = data.stations.some(s => s.station_id === selectedStation);
+            if (!stationExists) {
               setSelectedStation(data.stations[0].station_id);
             }
           }
@@ -72,15 +77,33 @@ export default function App() {
           } else {
             setLiveStatus('🌍 Max Planck Weather Data');
           }
-        } else if (isMounted && telemetry.length === 0) {
-          setStations(INITIAL_STATIONS);
-          setTelemetry(INITIAL_TELEMETRY);
-          setSelectedStation(INITIAL_STATIONS[0].station_id);
-          setLiveStatus('Interactive Demo Mode');
+        } else if (isMounted) {
+          // Backend disconnected / offline fallback
+          if (activeDataset === 'maxplanck') {
+            setStations(MPI_JENA_INITIAL_STATIONS);
+            setTelemetry(MPI_JENA_INITIAL_TELEMETRY);
+            setSelectedStation('AWS_MPI_JENA_01');
+            setLiveStatus('Max Planck Demo Mode');
+          } else {
+            setStations(INITIAL_STATIONS);
+            setTelemetry(INITIAL_TELEMETRY);
+            setSelectedStation('AWS_DELHI_01');
+            setLiveStatus('Interactive Demo Mode');
+          }
         }
       } catch (err) {
-        if (isMounted && telemetry.length === 0) {
-          setLiveStatus('Interactive Demo Mode');
+        if (isMounted) {
+          if (activeDataset === 'maxplanck') {
+            setStations(MPI_JENA_INITIAL_STATIONS);
+            setTelemetry(MPI_JENA_INITIAL_TELEMETRY);
+            setSelectedStation('AWS_MPI_JENA_01');
+            setLiveStatus('Max Planck Demo Mode');
+          } else {
+            setStations(INITIAL_STATIONS);
+            setTelemetry(INITIAL_TELEMETRY);
+            setSelectedStation('AWS_DELHI_01');
+            setLiveStatus('Interactive Demo Mode');
+          }
         }
       } finally {
         if (isMounted) {
@@ -100,7 +123,7 @@ export default function App() {
       isMounted = false;
       if (timerId) clearInterval(timerId);
     };
-  }, [activeDataset, selectedStation, isSimulating]);
+  }, [activeDataset, isSimulating]);
 
   const activeTelemetry = telemetry.filter((t) => t.station_id === selectedStation);
   const anomalyAlerts = telemetry.filter((t) => t.is_anomaly_pred);
@@ -132,7 +155,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 relative">
-        {isLoading && telemetry.length === 0 && (
+        {isLoading && (
           <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center rounded-xl">
             <div className="flex items-center space-x-3 bg-slate-900 border border-slate-800 px-6 py-4 rounded-xl shadow-2xl">
               <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
