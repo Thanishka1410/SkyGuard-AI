@@ -19,30 +19,43 @@ export default function DemoControls({ isSimulating, setIsSimulating, onInjectSu
   const handleInject = async (anomalyType, label) => {
     setIsSubmitting(true);
     setActiveStatus(null);
+    const payload = {
+      station_id: selectedStation,
+      anomaly_type: anomalyType,
+      duration_ticks: durationTicks
+    };
+
     try {
-      const res = await fetch('http://localhost:8000/api/demo/inject', {
+      let res = await fetch('http://localhost:8000/api/demo/inject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          station_id: selectedStation,
-          anomaly_type: anomalyType,
-          duration_ticks: durationTicks
-        })
-      });
+        body: JSON.stringify(payload)
+      }).catch(() => null);
 
-      if (res.ok) {
+      if (!res || !res.ok) {
+        res = await fetch('/api/demo/inject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(() => null);
+      }
+
+      if (res && res.ok) {
         const data = await res.json();
+        // Ensure simulation is running when injecting
+        if (!isSimulating) {
+          setIsSimulating(true);
+        }
         setActiveStatus({
           type: 'success',
-          msg: `Injected '${label}' on ${selectedStation} for ${durationTicks} ticks! Watch 3-Layer detection update in real time.`
+          msg: `Injected '${label}' on ${selectedStation} for ${durationTicks} ticks! Streaming live detections...`
         });
         if (onInjectSuccess) onInjectSuccess();
       } else {
-        const err = await res.json();
-        setActiveStatus({ type: 'error', msg: err.detail || 'Injection failed.' });
+        setActiveStatus({ type: 'error', msg: 'Injection failed. Backend offline or endpoint error.' });
       }
     } catch (err) {
-      setActiveStatus({ type: 'error', msg: 'Cannot connect to FastAPI backend at http://localhost:8000' });
+      setActiveStatus({ type: 'error', msg: 'Cannot connect to FastAPI backend.' });
     } finally {
       setIsSubmitting(false);
     }
