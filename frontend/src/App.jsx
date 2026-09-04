@@ -14,6 +14,7 @@ import {
   MPI_JENA_INITIAL_STATIONS,
   MPI_JENA_INITIAL_TELEMETRY
 } from './data/mockData';
+import { formatTimeString } from './utils/formatters';
 import { Map, Cpu, AlertTriangle, Layers, Sliders } from 'lucide-react';
 
 export default function App() {
@@ -25,7 +26,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showDemoControls, setShowDemoControls] = useState(true);
-  const [isSimulating, setIsSimulating] = useState(true);
+  const [isSimulating, setIsSimulating] = useState(false); // Default STOPPED per user request
 
   // Handle Dataset Switch cleanly without clearing state to 0 items
   const handleDatasetChange = (newDataset) => {
@@ -33,7 +34,7 @@ export default function App() {
     setIsLoading(true);
     setActiveDataset(newDataset);
     if (newDataset === 'live') {
-      setIsSimulating(true);
+      setIsSimulating(false);
     }
     if (newDataset === 'maxplanck') {
       setSelectedStation('AWS_MPI_JENA_01');
@@ -274,7 +275,7 @@ export default function App() {
                   <tbody className="divide-y divide-slate-800">
                     {anomalyAlerts.slice(0, 10).map((row, idx) => (
                       <tr key={`${row.station_id}-${row.timestamp}-${idx}`} className="hover:bg-slate-800/40">
-                        <td className="px-3 py-2 font-mono text-slate-400">{new Date(row.timestamp).toLocaleTimeString()}</td>
+                        <td className="px-3 py-2 font-mono text-slate-400">{formatTimeString(row.timestamp)}</td>
                         <td className="px-3 py-2 font-mono text-sky-400">{row.station_id}</td>
                         <td className="px-3 py-2 font-medium text-rose-400">{row.temperature_C != null ? `${row.temperature_C}°C` : 'NaN'}</td>
                         <td className="px-3 py-2 text-slate-300">{row.spatial_expected_temp != null ? `${row.spatial_expected_temp}°C` : 'N/A'}</td>

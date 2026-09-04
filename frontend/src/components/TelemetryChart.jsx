@@ -2,11 +2,12 @@ import React from 'react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ReferenceDot
 } from 'recharts';
-import { LineChart as LineIcon, Cpu } from 'lucide-react';
+import { LineChart as LineIcon } from 'lucide-react';
+import { formatTimeString } from '../utils/formatters';
 
 export default function TelemetryChart({ telemetryData, selectedStation }) {
-  const chartData = telemetryData.map((row) => ({
-    time: new Date(row.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  const chartData = (telemetryData || []).map((row) => ({
+    time: formatTimeString(row.timestamp),
     fullTime: row.timestamp,
     rawTemp: row.temperature_C,
     correctedTemp: row.corrected_temp_C,
@@ -32,7 +33,7 @@ export default function TelemetryChart({ telemetryData, selectedStation }) {
 
         <div className="flex items-center space-x-3 text-xs">
           <div className="flex items-center space-x-1.5">
-            <span className="w-3 h-0.5 bg-slate-400"></span>
+            <span className="w-3 h-0.5 bg-rose-400"></span>
             <span className="text-slate-300">Raw Sensor Telemetry</span>
           </div>
           <div className="flex items-center space-x-1.5">
@@ -50,7 +51,7 @@ export default function TelemetryChart({ telemetryData, selectedStation }) {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-            <XAxis dataKey="time" stroke="#64748b" fontSize={11} />
+            <XAxis dataKey="time" stroke="#64748b" fontSize={11} minTickGap={15} />
             <YAxis stroke="#64748b" fontSize={11} domain={['auto', 'auto']} unit="°C" />
             <Tooltip
               contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.5rem' }}
@@ -64,9 +65,10 @@ export default function TelemetryChart({ telemetryData, selectedStation }) {
               type="monotone"
               dataKey="rawTemp"
               name="Raw Telemetry (°C)"
-              stroke="#94a3b8"
-              strokeWidth={1.5}
-              dot={false}
+              stroke="#f43f5e"
+              strokeWidth={1.8}
+              dot={{ r: 2 }}
+              isAnimationActive={false}
             />
 
             {/* Auto-Corrected Line */}
@@ -76,19 +78,21 @@ export default function TelemetryChart({ telemetryData, selectedStation }) {
               name="Self-Healing Imputed (°C)"
               stroke="#10b981"
               strokeWidth={2}
+              strokeDasharray="4 4"
               dot={false}
+              isAnimationActive={false}
             />
 
             {/* Anomaly Dots */}
             {anomalyPoints.map((pt, idx) => (
               <ReferenceDot
-                key={idx}
+                key={`dot-${idx}-${pt.time}`}
                 x={pt.time}
                 y={pt.rawTemp}
-                r={5}
+                r={6}
                 fill="#f43f5e"
-                stroke="#fff"
-                strokeWidth={1.5}
+                stroke="#ffffff"
+                strokeWidth={2}
               />
             ))}
           </LineChart>

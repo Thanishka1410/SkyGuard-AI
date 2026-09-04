@@ -29,7 +29,6 @@ export default function DemoControls({
     // Automatically ensure active dataset is live stream and selected station matches target
     if (setActiveDataset) setActiveDataset('live');
     if (setSelectedStation) setSelectedStation(targetStation);
-    if (!isSimulating && setIsSimulating) setIsSimulating(true);
 
     const payload = {
       station_id: targetStation,
@@ -90,24 +89,24 @@ export default function DemoControls({
           </div>
         </div>
 
-        {/* Master Start / Pause Simulation Button */}
+        {/* Master Start / Stop Simulation Button */}
         <button
           onClick={() => setIsSimulating(!isSimulating)}
           className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shrink-0 ${
             isSimulating
-              ? 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 border border-emerald-400 shadow-emerald-500/20'
-              : 'bg-amber-500 hover:bg-amber-600 text-slate-950 border border-amber-400 shadow-amber-500/20'
+              ? 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-500 shadow-rose-500/20'
+              : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 border border-emerald-400 shadow-emerald-500/20'
           }`}
         >
           {isSimulating ? (
             <>
-              <Pause className="w-4 h-4 fill-slate-950" />
-              <span>PAUSE LIVE STREAM</span>
+              <Pause className="w-4 h-4 fill-white" />
+              <span>STOP SIMULATION</span>
             </>
           ) : (
             <>
               <Play className="w-4 h-4 fill-slate-950" />
-              <span>START LIVE SIMULATION</span>
+              <span>START SIMULATION</span>
             </>
           )}
         </button>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Layers, ShieldAlert, Cpu } from 'lucide-react';
 
+import { formatTimeString } from '../utils/formatters';
+
 export default function ExplainabilityTable({ telemetryData }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
@@ -36,7 +38,7 @@ export default function ExplainabilityTable({ telemetryData }) {
               const isAnomaly = row.is_anomaly_pred;
               return (
                 <tr key={idx} className={isAnomaly ? 'bg-rose-500/5' : 'hover:bg-slate-800/40'}>
-                  <td className="px-3 py-2 font-mono text-slate-400">{new Date(row.timestamp).toLocaleTimeString()}</td>
+                  <td className="px-3 py-2 font-mono text-slate-400">{formatTimeString(row.timestamp)}</td>
                   <td className="px-3 py-2 font-mono text-sky-400 font-medium">{row.station_id}</td>
                   <td className="px-3 py-2 font-medium text-white">{row.temperature_C}°C</td>
                   <td className="px-3 py-2 text-emerald-400 font-medium">{row.corrected_temp_C}°C</td>

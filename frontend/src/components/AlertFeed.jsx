@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, Zap, ShieldCheck, Thermometer, Radio } from 'lucide-react';
+import { formatTimeString } from '../utils/formatters';
 
 export default function AlertFeed({ alerts }) {
   const getCauseBadge = (cause) => {
@@ -45,7 +46,7 @@ export default function AlertFeed({ alerts }) {
                   {getCauseBadge(alert.root_cause)}
                 </div>
                 <span className="text-[11px] text-slate-500 font-mono">
-                  {new Date(alert.timestamp).toLocaleTimeString()}
+                  {formatTimeString(alert.timestamp)}
                 </span>
               </div>
 
