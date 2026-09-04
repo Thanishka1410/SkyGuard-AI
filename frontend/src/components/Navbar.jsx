@@ -46,7 +46,7 @@ export default function Navbar({ activeDataset, setActiveDataset, liveStatus }) 
             onChange={(e) => setActiveDataset(e.target.value)}
             className="bg-slate-800 text-slate-200 border border-purple-500/50 text-xs font-medium rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none shadow-lg"
           >
-            <option value="live">🎮 Live Interactive Demo Mode (Judges Control)</option>
+            <option value="live">🎮 Live Interactive Demo Mode (Fault Injection)</option>
             <option value="simulated">📊 Simulated India AWS Network (30-Day Batch)</option>
             <option value="maxplanck">🌍 Max Planck Real Unlabelled Weather Dataset</option>
           </select>

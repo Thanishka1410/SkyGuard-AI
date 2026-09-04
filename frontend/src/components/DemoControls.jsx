@@ -58,9 +58,9 @@ export default function DemoControls({ onInjectSuccess }) {
           </div>
           <div>
             <h3 className="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-2">
-              🎛️ Live Demo Fault Injection Panel (Judges Control)
+              🎛️ Live Fault Injection & Simulation Panel
               <span className="px-2 py-0.5 text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-full font-mono">
-                Interactive On-Demand
+                Interactive Controls
               </span>
             </h3>
             <p className="text-xs text-slate-400">

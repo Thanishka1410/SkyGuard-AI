@@ -53,7 +53,7 @@ s_weight = st.sidebar.slider("Spatial Weight", 0.1, 0.6, 0.35, 0.05)
 t_weight = st.sidebar.slider("Temporal Weight", 0.1, 0.6, 0.25, 0.05)
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🎮 Live Demo Fault Injection (Judges)")
+st.sidebar.subheader("🎮 Live Demo Fault Injection Simulation")
 demo_station = st.sidebar.selectbox("Target Station", ["AWS_DELHI_01", "AWS_MUMBAI_01", "AWS_CHENNAI_01", "AWS_LUCKNOW_01", "AWS_SHIMLA_01", "AWS_JAISALMER_01"])
 demo_duration = st.sidebar.slider("Fault Duration (ticks)", 3, 24, 10)
 

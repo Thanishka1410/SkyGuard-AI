@@ -145,7 +145,7 @@ export default function App() {
             className="flex items-center space-x-1.5 px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-lg text-purple-300 transition-colors font-medium"
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>{showDemoControls ? 'Hide Judge Controls' : 'Show Judge Controls'}</span>
+            <span>{showDemoControls ? 'Hide Fault Controls' : 'Show Fault Controls'}</span>
           </button>
         </div>
 

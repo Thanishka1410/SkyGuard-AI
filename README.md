@@ -60,9 +60,9 @@ Standard single-variable thresholds generate excessive false alarms during genui
 
 ---
 
-## 🎮 Live Interactive Demo Guide for Judges
+## 🎮 Live Interactive Demo & Simulation Guide
 
-SkyGuard AI includes an **On-Demand Fault Injection Engine** (`src/data_simulator.py`) designed specifically for live hackathon judging. Judges can trigger specific sensor hardware failures on demand and observe real-time detection, scoring, and auto-correction within seconds.
+SkyGuard AI includes an **On-Demand Fault Injection Engine** (`src/data_simulator.py`) designed specifically for interactive demonstration. System operators can trigger specific sensor hardware failures on demand and observe real-time detection, scoring, and auto-correction within seconds.
 
 ### How to Run the Live Demo
 
@@ -79,9 +79,9 @@ SkyGuard AI includes an **On-Demand Fault Injection Engine** (`src/data_simulato
    ```
    *Open browser at `http://localhost:3000`.*
 
-3. **Using the Demo Controls Panel**:
-   - In the top-right select dropdown, select **`🎮 Live Interactive Demo Mode (Judges Control)`**.
-   - The purple **"🎛️ Live Demo Fault Injection Panel"** will appear at the top.
+3. **Using the Fault Injection Controls Panel**:
+   - In the top-right select dropdown, select **`🎮 Live Interactive Demo Mode (Fault Injection)`**.
+   - The purple **"🎛️ Live Fault Injection & Simulation Panel"** will appear at the top.
    - Select a target AWS Station (e.g. `AWS_DELHI_01` Plains or `AWS_MUMBAI_01` Coastal) and fault duration.
    - Click any of the 5 fault injection buttons:
      - ⚡ **Inject Thermal Spike** (`spike`): Sudden $+25^\circ\text{C}$ jump.
@@ -90,7 +90,7 @@ SkyGuard AI includes an **On-Demand Fault Injection Engine** (`src/data_simulato
      - 📡 **Inject Comm Loss** (`comm_loss`): Sensor signal dropout (`NaN` readings).
      - 🔊 **Inject Noise Burst** (`noise_burst`): High-variance electrical noise.
 
-4. **What Judges Should Expect to Observe**:
+4. **Expected Simulation Behaviors**:
    - **Real-Time Detection Latency**: Injected faults flow through Physics $\rightarrow$ Temporal $\rightarrow$ Spatial $\rightarrow$ Fusion within **1.5 seconds**.
    - **Severity Score & Root Cause**: Fused confidence score ($0.0 - 1.0$) and exact taxonomy label (`SPIKE`, `FROZEN_VALUE`, `CALIBRATION_DRIFT`, `COMM_LOSS`, `NOISE_BURST`).
    - **Self-Healing Telemetry Chart**: The green line plot instantly imputes the clean expected value while red markers flag the injected raw fault.
