@@ -34,33 +34,33 @@ export default function ExplainabilityTable({ telemetryData }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
-            {telemetryData.slice(0, 15).map((row, idx) => {
+            {([...(telemetryData || [])]).reverse().slice(0, 25).map((row, idx) => {
               const isAnomaly = row.is_anomaly_pred;
               return (
-                <tr key={idx} className={isAnomaly ? 'bg-rose-500/5' : 'hover:bg-slate-800/40'}>
+                <tr key={`${row.station_id}-${row.timestamp}-${idx}`} className={isAnomaly ? 'bg-rose-500/10 border-l-2 border-rose-500' : 'hover:bg-slate-800/40'}>
                   <td className="px-3 py-2 font-mono text-slate-400">{formatTimeString(row.timestamp)}</td>
                   <td className="px-3 py-2 font-mono text-sky-400 font-medium">{row.station_id}</td>
-                  <td className="px-3 py-2 font-medium text-white">{row.temperature_C}°C</td>
-                  <td className="px-3 py-2 text-emerald-400 font-medium">{row.corrected_temp_C}°C</td>
+                  <td className="px-3 py-2 font-medium text-white">{row.temperature_C != null ? `${row.temperature_C}°C` : 'NaN'}</td>
+                  <td className="px-3 py-2 text-emerald-400 font-medium">{row.corrected_temp_C != null ? `${row.corrected_temp_C}°C` : 'N/A'}</td>
                   <td className="px-3 py-2 text-center font-mono">
-                    <span className={`px-2 py-0.5 rounded text-[11px] ${row.physics_score > 0 ? 'bg-rose-500/20 text-rose-400' : 'text-slate-400'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[11px] ${row.physics_score > 0 ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'text-slate-400'}`}>
                       {row.physics_score}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-center font-mono">
-                    <span className={`px-2 py-0.5 rounded text-[11px] ${row.temporal_score > 0.4 ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[11px] ${row.temporal_score > 0.4 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-slate-400'}`}>
                       {row.temporal_score}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-center font-mono">
-                    <span className={`px-2 py-0.5 rounded text-[11px] ${row.spatial_score > 0.4 ? 'bg-purple-500/20 text-purple-400' : 'text-slate-400'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[11px] ${row.spatial_score > 0.4 ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-slate-400'}`}>
                       {row.spatial_score}
                     </span>
                   </td>
                   <td className="px-3 py-2 font-semibold uppercase text-[11px]">
-                    <span className={isAnomaly ? 'text-rose-400' : 'text-slate-400'}>{row.root_cause}</span>
+                    <span className={isAnomaly ? 'text-rose-400 font-bold' : 'text-slate-400'}>{row.root_cause}</span>
                   </td>
-                  <td className="px-3 py-2 text-slate-400 max-w-xs truncate">{row.explanation}</td>
+                  <td className="px-3 py-2 text-slate-300 max-w-xs truncate" title={row.explanation}>{row.explanation}</td>
                 </tr>
               );
             })}

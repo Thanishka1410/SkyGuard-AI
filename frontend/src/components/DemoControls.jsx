@@ -26,9 +26,10 @@ export default function DemoControls({
     setIsSubmitting(true);
     setActiveStatus(null);
 
-    // Automatically ensure active dataset is live stream and selected station matches target
+    // Automatically ensure active dataset is live stream, target station selected, and simulation active
     if (setActiveDataset) setActiveDataset('live');
     if (setSelectedStation) setSelectedStation(targetStation);
+    if (setIsSimulating) setIsSimulating(true);
 
     const payload = {
       station_id: targetStation,

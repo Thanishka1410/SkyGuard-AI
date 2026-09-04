@@ -35,7 +35,7 @@ export default function AlertFeed({ alerts }) {
         {alerts.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-sm">No active anomaly alerts detected</div>
         ) : (
-          alerts.slice(0, 20).map((alert, idx) => (
+          ([...(alerts || [])]).reverse().slice(0, 25).map((alert, idx) => (
             <div
               key={idx}
               className="p-3.5 rounded-lg bg-slate-950 border border-slate-800/80 hover:border-slate-700 transition-all text-xs"

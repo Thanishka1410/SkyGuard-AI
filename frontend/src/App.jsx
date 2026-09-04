@@ -27,6 +27,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showDemoControls, setShowDemoControls] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false); // Default STOPPED per user request
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Handle Dataset Switch cleanly without clearing state to 0 items
   const handleDatasetChange = (newDataset) => {
@@ -127,7 +128,7 @@ export default function App() {
       isMounted = false;
       if (timerId) clearInterval(timerId);
     };
-  }, [activeDataset, isSimulating]);
+  }, [activeDataset, isSimulating, refreshTrigger]);
 
   const activeTelemetry = telemetry.filter((t) => t.station_id === selectedStation);
   const anomalyAlerts = telemetry.filter((t) => t.is_anomaly_pred);
@@ -205,7 +206,7 @@ export default function App() {
             setIsSimulating={setIsSimulating}
             setActiveDataset={handleDatasetChange}
             setSelectedStation={setSelectedStation}
-            onInjectSuccess={() => {}}
+            onInjectSuccess={() => setRefreshTrigger((prev) => prev + 1)}
           />
         )}
 
@@ -273,7 +274,7 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
-                    {anomalyAlerts.slice(0, 10).map((row, idx) => (
+                    {([...(anomalyAlerts || [])]).reverse().slice(0, 15).map((row, idx) => (
                       <tr key={`${row.station_id}-${row.timestamp}-${idx}`} className="hover:bg-slate-800/40">
                         <td className="px-3 py-2 font-mono text-slate-400">{formatTimeString(row.timestamp)}</td>
                         <td className="px-3 py-2 font-mono text-sky-400">{row.station_id}</td>
