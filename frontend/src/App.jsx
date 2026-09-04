@@ -20,6 +20,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showDemoControls, setShowDemoControls] = useState(true);
+  const [isSimulating, setIsSimulating] = useState(true);
 
   // Handle Dataset Switch with clean state reset
   const handleDatasetChange = (newDataset) => {
@@ -35,7 +36,7 @@ export default function App() {
     }
   };
 
-  // Fetch data from FastAPI backend (Polls every 1.5s in Live mode)
+  // Fetch data from FastAPI backend (Polls every 1.5s in Live mode when isSimulating is true)
   useEffect(() => {
     let isMounted = true;
     let timerId = null;
@@ -63,7 +64,11 @@ export default function App() {
           if (data.telemetry && data.telemetry.length > 0) {
             setTelemetry(data.telemetry);
           }
-          setLiveStatus(activeDataset === 'live' ? '⚡ Live Demo Stream Active' : 'Live FastAPI Connected');
+          if (activeDataset === 'live') {
+            setLiveStatus(isSimulating ? '⚡ Live Demo Stream Active' : '⏸️ Live Stream Paused');
+          } else {
+            setLiveStatus('Live FastAPI Connected');
+          }
         } else if (isMounted && telemetry.length === 0) {
           setStations(INITIAL_STATIONS);
           setTelemetry(INITIAL_TELEMETRY);
@@ -83,8 +88,8 @@ export default function App() {
 
     fetchData();
 
-    // In Live mode, poll every 1.5 seconds for instant fault reflection
-    if (activeDataset === 'live') {
+    // In Live mode, poll every 1.5 seconds when isSimulating is true
+    if (activeDataset === 'live' && isSimulating) {
       timerId = setInterval(fetchData, 1500);
     }
 
@@ -92,7 +97,7 @@ export default function App() {
       isMounted = false;
       if (timerId) clearInterval(timerId);
     };
-  }, [activeDataset, selectedStation]);
+  }, [activeDataset, selectedStation, isSimulating]);
 
   const activeTelemetry = telemetry.filter((t) => t.station_id === selectedStation);
   const anomalyAlerts = telemetry.filter((t) => t.is_anomaly_pred);
@@ -136,9 +141,9 @@ export default function App() {
         {/* Demo Controls Header Toggle */}
         <div className="flex items-center justify-between bg-slate-900/80 border border-purple-500/30 rounded-xl px-4 py-2 text-xs">
           <div className="flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
+            <span className={`w-2 h-2 rounded-full ${isSimulating ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`}></span>
             <span className="font-semibold text-purple-300">Live Demo Mode Active</span>
-            <span className="text-slate-400">({activeDataset === 'live' ? 'Interactive Fault Injection Enabled' : 'Batch Data View'})</span>
+            <span className="text-slate-400">({activeDataset === 'live' ? (isSimulating ? '🟢 Live Streaming (1.5s ticks)' : '⏸️ Stream Paused') : 'Batch Data View'})</span>
           </div>
           <button
             onClick={() => setShowDemoControls(!showDemoControls)}
@@ -151,7 +156,11 @@ export default function App() {
 
         {/* Demo Fault Injection Panel */}
         {showDemoControls && (
-          <DemoControls onInjectSuccess={() => {}} />
+          <DemoControls
+            isSimulating={isSimulating}
+            setIsSimulating={setIsSimulating}
+            onInjectSuccess={() => {}}
+          />
         )}
 
         {/* Top Metric Cards */}

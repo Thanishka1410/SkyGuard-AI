@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, Snowflake, TrendingUp, Radio, Volume2, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Zap, Snowflake, TrendingUp, Radio, Volume2, ShieldAlert, CheckCircle2, Play, Pause } from 'lucide-react';
 
 const STATIONS = [
   { id: 'AWS_DELHI_01', label: 'AWS_DELHI_01 (Plains)' },
@@ -10,7 +10,7 @@ const STATIONS = [
   { id: 'AWS_JAISALMER_01', label: 'AWS_JAISALMER_01 (Desert)' }
 ];
 
-export default function DemoControls({ onInjectSuccess }) {
+export default function DemoControls({ isSimulating, setIsSimulating, onInjectSuccess }) {
   const [selectedStation, setSelectedStation] = useState('AWS_DELHI_01');
   const [durationTicks, setDurationTicks] = useState(10);
   const [activeStatus, setActiveStatus] = useState(null);
@@ -50,8 +50,8 @@ export default function DemoControls({ onInjectSuccess }) {
 
   return (
     <div className="bg-gradient-to-r from-slate-900 via-purple-950/40 to-slate-900 border border-purple-500/30 rounded-xl p-5 shadow-2xl space-y-4">
-      {/* Panel Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-500/20 pb-3">
+      {/* Panel Header with Master Start/Pause Button */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-purple-500/20 pb-3">
         <div className="flex items-center space-x-2.5">
           <div className="p-2 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg">
             <ShieldAlert className="w-5 h-5 animate-pulse" />
@@ -64,10 +64,32 @@ export default function DemoControls({ onInjectSuccess }) {
               </span>
             </h3>
             <p className="text-xs text-slate-400">
-              Trigger real sensor hardware faults on demand to test real-time 3-Layer Physics, Spatial, and Temporal detection logic.
+              Start/pause live telemetry stream and trigger real sensor hardware faults on demand.
             </p>
           </div>
         </div>
+
+        {/* Master Start / Pause Simulation Button */}
+        <button
+          onClick={() => setIsSimulating(!isSimulating)}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shrink-0 ${
+            isSimulating
+              ? 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 border border-emerald-400 shadow-emerald-500/20'
+              : 'bg-amber-500 hover:bg-amber-600 text-slate-950 border border-amber-400 shadow-amber-500/20'
+          }`}
+        >
+          {isSimulating ? (
+            <>
+              <Pause className="w-4 h-4 fill-slate-950" />
+              <span>PAUSE LIVE STREAM</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4 fill-slate-950" />
+              <span>START LIVE SIMULATION</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Control Parameters */}
